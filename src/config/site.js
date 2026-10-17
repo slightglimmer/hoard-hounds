@@ -17,8 +17,8 @@ export const SITE = {
   // Optional, e.g. 'Mon–Sat, 8am–6pm'. Leave empty to hide hours on the site.
   hours: '',
 
-  // PLACEHOLDER domain. Also update index.html, privacy.html, public/robots.txt and public/sitemap.xml.
-  url: 'https://www.hoardhounds.com',
+  // If the domain changes, also update index.html, privacy.html, public/robots.txt, public/sitemap.xml and public/CNAME.
+  url: 'https://hoardhounds.com',
   year: 2026,
 };
 

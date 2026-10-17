@@ -15,7 +15,6 @@ Search the project for `PLACEHOLDER` to find each one.
 |---|---|
 | Phone number and email (set to (734) 589-7627 and johnice.edward@gmail.com) | `src/config/site.js` |
 | Business hours (hidden until you add them) | `src/config/site.js` → `hours` |
-| Domain (`https://www.hoardhounds.com`) | `src/config/site.js`, `index.html`, `privacy.html`, `public/robots.txt`, `public/sitemap.xml` |
 | Illustrations standing in for photos | `public/images/` (see section 5) |
 | Privacy policy text | `src/PrivacyPage.jsx`. Have someone review it before launch |
 
@@ -104,7 +103,29 @@ public folder.
 
 ## 4. Publishing the website
 
-### Option A: Netlify (recommended, and forms work automatically)
+### Current setup: GitHub Pages at hoardhounds.com
+
+`.github/workflows/deploy.yml` builds the site and publishes it every time you push to `main`.
+
+1. In this repo go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**.
+2. Custom domain: `hoardhounds.com` (also saved in `public/CNAME`).
+3. DNS at Namecheap (**Domain List → hoardhounds.com → Advanced DNS**). Delete the parking-page CNAME and the
+   URL Redirect record, then add:
+
+   | Type | Host | Value |
+   |---|---|---|
+   | A | `@` | `185.199.108.153` |
+   | A | `@` | `185.199.109.153` |
+   | A | `@` | `185.199.110.153` |
+   | A | `@` | `185.199.111.153` |
+   | CNAME | `www` | `slightglimmer.github.io.` |
+
+4. Once GitHub's DNS check passes (minutes to a few hours), tick **Enforce HTTPS**.
+5. The quote form on GitHub Pages needs a form service URL: see "Alternative: Formspree" in section 3, then add
+   it under **Settings → Secrets and variables → Actions → Variables** as `VITE_FORM_ENDPOINT` and re-run the
+   deploy (Actions tab → Deploy to GitHub Pages → Run workflow).
+
+### Alternative: Netlify (forms with photo uploads work without a separate form service)
 
 1. Sign in at [netlify.com](https://www.netlify.com) with GitHub.
 2. **Add new site → Import an existing project →** choose this repository.

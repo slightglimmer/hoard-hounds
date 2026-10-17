@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.hoardhounds.com/sitemap.xml
+Sitemap: https://hoardhounds.com/sitemap.xml
