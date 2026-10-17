@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 680" width="800" height="680">
+  <!-- PLACEHOLDER illustration. Replace with a real photo (your truck, team, or a Metro Detroit street) - see README. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#CFE1E6"/>
+      <stop offset="1" stop-color="#F3F1E8"/>
+    </linearGradient>
+    <pattern id="brick" width="40" height="20" patternUnits="userSpaceOnUse">
+      <rect width="40" height="20" fill="#A65F45"/>
+      <path d="M0 0.5H40M0 10.5H40M20 0V10M0 10V20M40 10V20" stroke="#8E4F39" stroke-width="1.5"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="680" fill="url(#sky)"/>
+  <circle cx="650" cy="120" r="46" fill="#FFF1C9"/>
+  <!-- Clouds -->
+  <g fill="#FFFFFF" opacity="0.85">
+    <ellipse cx="170" cy="110" rx="70" ry="18"/><ellipse cx="200" cy="96" rx="40" ry="18"/>
+    <ellipse cx="520" cy="70" rx="50" ry="12"/>
+  </g>
+  <!-- Background trees -->
+  <circle cx="60" cy="380" r="90" fill="#8FAA88"/>
+  <circle cx="140" cy="350" r="70" fill="#7E9A7A"/>
+  <circle cx="740" cy="370" r="95" fill="#7E9A7A"/>
+  <circle cx="670" cy="400" r="60" fill="#8FAA88"/>
+  <!-- Lawn -->
+  <path d="M0 500 Q400 470 800 500 V680 H0 Z" fill="#9DB596"/>
+  <!-- House body -->
+  <rect x="190" y="300" width="420" height="220" fill="url(#brick)"/>
+  <!-- Chimney -->
+  <rect x="520" y="185" width="40" height="120" fill="url(#brick)"/>
+  <rect x="514" y="178" width="52" height="10" fill="#7A3F2D"/>
+  <!-- Roof -->
+  <path d="M150 312 L400 160 L650 312 Z" fill="#243B32"/>
+  <path d="M150 312 L400 160 L650 312" fill="none" stroke="#1A2C25" stroke-width="10" stroke-linejoin="round"/>
+  <!-- Dormer -->
+  <path d="M340 250 L400 205 L460 250 V290 H340 Z" fill="#F7F3EB"/>
+  <path d="M328 256 L400 200 L472 256" fill="none" stroke="#1A2C25" stroke-width="10" stroke-linejoin="round"/>
+  <rect x="372" y="240" width="56" height="40" fill="#BFD8E6" stroke="#FBFAF6" stroke-width="5"/>
+  <!-- Porch -->
+  <rect x="300" y="380" width="200" height="12" fill="#F7F3EB"/>
+  <path d="M290 382 L400 340 L510 382 Z" fill="#F7F3EB"/>
+  <rect x="312" y="392" width="10" height="128" fill="#F7F3EB"/>
+  <rect x="478" y="392" width="10" height="128" fill="#F7F3EB"/>
+  <!-- Door -->
+  <rect x="370" y="410" width="60" height="110" rx="4" fill="#243B32"/>
+  <circle cx="418" cy="468" r="4" fill="#D9A441"/>
+  <rect x="382" y="422" width="36" height="22" rx="2" fill="#BFD8E6" opacity="0.8"/>
+  <!-- Windows -->
+  <g>
+    <rect x="215" y="390" width="70" height="80" fill="#BFD8E6" stroke="#FBFAF6" stroke-width="7"/>
+    <path d="M250 390V470M215 430H285" stroke="#FBFAF6" stroke-width="5"/>
+    <rect x="208" y="470" width="84" height="9" fill="#FBFAF6"/>
+    <rect x="515" y="390" width="70" height="80" fill="#BFD8E6" stroke="#FBFAF6" stroke-width="7"/>
+    <path d="M550 390V470M515 430H585" stroke="#FBFAF6" stroke-width="5"/>
+    <rect x="508" y="470" width="84" height="9" fill="#FBFAF6"/>
+  </g>
+  <!-- Steps and walk -->
+  <rect x="350" y="520" width="100" height="12" fill="#D8D2C4"/>
+  <rect x="340" y="532" width="120" height="12" fill="#CBC4B4"/>
+  <path d="M352 544 H448 L520 680 H280 Z" fill="#E4DED0"/>
+  <!-- Shrubs -->
+  <g fill="#6E8C6A">
+    <ellipse cx="230" cy="515" rx="45" ry="24"/><ellipse cx="290" cy="520" rx="30" ry="18"/>
+    <ellipse cx="570" cy="515" rx="45" ry="24"/><ellipse cx="510" cy="520" rx="30" ry="18"/>
+  </g>
+  <!-- Mailbox -->
+  <rect x="640" y="520" width="6" height="70" fill="#292929"/>
+  <rect x="624" y="500" width="40" height="26" rx="12" fill="#243B32"/>
+  <rect x="662" y="496" width="4" height="16" fill="#D9A441"/>
+</svg>

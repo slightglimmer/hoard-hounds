@@ -1,0 +1,8 @@
+{
+  "name": "Hoard Hounds LLC",
+  "short_name": "Hoard Hounds",
+  "icons": [{ "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }],
+  "theme_color": "#243B32",
+  "background_color": "#F7F3EB",
+  "display": "browser"
+}

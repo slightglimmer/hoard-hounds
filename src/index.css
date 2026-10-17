@@ -1,0 +1,116 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-forest: #243b32;
+  --color-forest-dark: #1a2c25;
+  --color-cream: #f7f3eb;
+  --color-cream-dark: #ede5d6;
+  --color-sage: #a7b8a2;
+  --color-sage-light: #dbe3d7;
+  --color-charcoal: #292929;
+  --color-gold: #d9a441;
+  --color-gold-light: #e8bf6c;
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5.5rem;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-cream font-sans text-charcoal antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-forest;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-gold);
+    outline-offset: 3px;
+    border-radius: 0.5rem;
+  }
+}
+
+@utility btn {
+  @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 py-3 text-base font-bold transition duration-200 ease-out active:scale-[0.98];
+}
+@utility btn-gold {
+  @apply btn bg-gold text-charcoal shadow-[0_6px_20px_-8px_rgba(217,164,65,0.9)] hover:-translate-y-0.5 hover:bg-gold-light;
+}
+@utility btn-forest {
+  @apply btn bg-forest text-cream hover:-translate-y-0.5 hover:bg-forest-dark;
+}
+@utility btn-outline {
+  @apply btn border-2 border-forest/20 bg-white/60 text-forest hover:-translate-y-0.5 hover:border-forest/40 hover:bg-white;
+}
+@utility eyebrow {
+  @apply inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em];
+}
+@utility container-x {
+  @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+}
+@utility section {
+  @apply py-20 sm:py-24 lg:py-28;
+}
+@utility field-label {
+  @apply mb-1.5 block text-sm font-semibold text-forest;
+}
+@utility field {
+  @apply block w-full rounded-xl border border-forest/20 bg-white px-4 py-3 text-base text-charcoal placeholder:text-charcoal/55 transition focus:border-forest focus:ring-4 focus:ring-sage/40 focus:outline-none aria-[invalid=true]:border-red-700 aria-[invalid=true]:ring-red-200;
+}
+
+/* Scroll reveal. Only hidden once JS has loaded (see the inline script in index.html),
+   so content is always visible to crawlers and visitors without JavaScript. */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.js .reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .animate-float {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
