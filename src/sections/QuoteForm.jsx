@@ -69,6 +69,7 @@ export default function QuoteForm() {
   const [dragging, setDragging] = useState(false);
   const [status, setStatus] = useState('idle'); // idle | submitting | success | error
   const [demoResult, setDemoResult] = useState(false);
+  const [photosDropped, setPhotosDropped] = useState(false);
   const [minDate, setMinDate] = useState(undefined);
 
   // Set on the client only, so the prerendered HTML matches what React renders first.
@@ -158,6 +159,7 @@ export default function QuoteForm() {
         photos,
       );
       setDemoResult(result.demo);
+      setPhotosDropped(!!result.photosDropped);
       setStatus('success');
       photos.forEach((p) => URL.revokeObjectURL(p.url));
       setPhotos([]);
@@ -226,6 +228,12 @@ export default function QuoteForm() {
                   We’ll review your project and reach out using the contact details you provided to talk through next
                   steps and your estimate.
                 </p>
+                {photosDropped && (
+                  <p className="mx-auto mt-5 max-w-md rounded-xl bg-gold/15 px-4 py-3 text-sm text-charcoal/85">
+                    Your details came through, but we couldn’t attach your photos. We may ask you to text or email
+                    them to {SITE.phoneDisplay} or {SITE.email}.
+                  </p>
+                )}
                 {demoResult && (
                   <p className="mx-auto mt-5 max-w-md rounded-xl bg-gold/15 px-4 py-3 text-sm text-charcoal/85">
                     <strong>Preview mode:</strong> this copy of the site isn’t connected to a form service yet, so

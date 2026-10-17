@@ -77,13 +77,17 @@ export async function submitQuote(values, photos) {
   }
 
   const url = PROVIDER === 'netlify' ? '/' : ENDPOINT;
-  const response = await fetch(url, {
-    method: 'POST',
-    body,
-    headers: { Accept: 'application/json' },
-  });
+  const send = (data) => fetch(url, { method: 'POST', body: data, headers: { Accept: 'application/json' } });
+
+  let response = await send(body);
+  // Some form plans (e.g. Formspree's free tier) reject file uploads. Rather than lose the
+  // request, resend it without photos and let the visitor know.
+  if (!response.ok && photos.length) {
+    response = await send(buildFormData(values, []));
+    if (response.ok) return { demo: false, photosDropped: true };
+  }
   if (!response.ok) {
     throw new Error(`Form submission failed (${response.status})`);
   }
-  return { demo: false };
+  return { demo: false, photosDropped: false };
 }
