@@ -86,7 +86,7 @@ export default function Overview() {
         <>
           <section aria-label="Totals" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <StatCard label="Revenue" icon="sparkle" cents={view.now.revenue} deltaPct={change(view.nowSoFar.revenue, view.before.revenue)}
-              note={view.hasRevenue ? 'Payments received' : 'Comes from job payments (Jobs, coming soon)'} />
+              note={view.hasRevenue ? 'Payments received on jobs' : 'Record payments on your Jobs to see revenue'} />
             <StatCard label="Expenses" icon="receipt" cents={view.now.expenses} deltaPct={change(view.nowSoFar.expenses, view.before.expenses)}
               goodWhenUp={false} accent="bg-petal/70 text-rose-ink" delay={60} />
             <StatCard label="Labor (estimated)" icon="users" cents={view.now.labor} deltaPct={change(view.nowSoFar.labor, view.before.labor)}

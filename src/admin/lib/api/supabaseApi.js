@@ -35,15 +35,19 @@ async function fetchAll(buildQuery) {
 // are set by the database.
 const pick = (obj, fields) => Object.fromEntries(fields.filter((f) => f in obj).map((f) => [f, obj[f] === '' ? null : obj[f]]));
 
-const EXPENSE_FIELDS = ['expense_date', 'vendor', 'description', 'category_id', 'amount', 'payment_method', 'notes'];
+const EXPENSE_FIELDS = ['expense_date', 'vendor', 'description', 'category_id', 'amount', 'payment_method', 'notes', 'job_id'];
 const RECURRING_FIELDS = ['vendor', 'description', 'category_id', 'amount', 'payment_method', 'frequency', 'start_date', 'end_date', 'active', 'notes'];
 const CATEGORY_FIELDS = ['name', 'tax_category', 'active', 'sort_order'];
 const PRICE_FIELDS = ['name', 'description', 'unit', 'unit_price', 'minimum_charge', 'active', 'sort_order'];
 // Totals are left out on purpose: the database calculates them.
 const ESTIMATE_FIELDS = [
   'customer_name', 'customer_email', 'customer_phone', 'property_address', 'status', 'estimate_date', 'valid_until',
-  'line_items', 'discount_type', 'discount_value', 'deposit_amount', 'notes', 'terms',
+  'line_items', 'discount_type', 'discount_value', 'deposit_amount', 'notes', 'terms', 'customer_id', 'job_id',
 ];
+const CUSTOMER_FIELDS = ['full_name', 'company', 'customer_type', 'email', 'phone', 'notes'];
+const JOB_FIELDS = ['customer_id', 'title', 'property_address', 'service_type', 'status', 'scheduled_date', 'completed_date', 'crew_notes'];
+const FINANCIAL_FIELDS = ['job_id', 'quoted_amount', 'agreed_price', 'admin_notes'];
+const PAYMENT_FIELDS = ['job_id', 'received_on', 'kind', 'amount', 'method', 'notes'];
 
 async function save(table, fields, row) {
   const values = pick(row, fields);
@@ -120,4 +124,38 @@ export const supabaseApi = {
   getEstimate: async (id) => unwrap(await supabase.from('estimates').select('*').eq('id', id).single()),
   saveEstimate: (row) => save('estimates', ESTIMATE_FIELDS, row),
   deleteEstimate: (id) => remove('estimates', id),
+
+  listCustomers: () => fetchAll(() => supabase.from('customers').select('*').order('full_name').order('id')),
+  saveCustomer: (row) => save('customers', CUSTOMER_FIELDS, row),
+  deleteCustomer: (id) => remove('customers', id),
+
+  // Everything the jobs list needs to show status, balances and profit.
+  async listJobsWithMoney() {
+    const [jobs, financials, payments, expenses, timeEntries, customers] = await Promise.all([
+      fetchAll(() => supabase.from('jobs').select('*').order('created_at', { ascending: false }).order('id')),
+      fetchAll(() => supabase.from('job_financials').select('*').order('job_id')),
+      fetchAll(() => supabase.from('job_payments').select('*').order('id')),
+      fetchAll(() => supabase.from('expenses').select('id, job_id, amount, category_id').not('job_id', 'is', null).order('id')),
+      fetchAll(() => supabase.from('time_entries').select('id, job_id, hours, hourly_rate').not('job_id', 'is', null).order('id')),
+      fetchAll(() => supabase.from('customers').select('*').order('full_name').order('id')),
+    ]);
+    return { jobs, financials, payments, expenses, timeEntries, customers };
+  },
+  async getJob(id) {
+    const [job, financials, payments, expenses, timeEntries, estimates] = await Promise.all([
+      supabase.from('jobs').select('*').eq('id', id).single().then(unwrap),
+      supabase.from('job_financials').select('*').eq('job_id', id).maybeSingle().then(unwrap),
+      fetchAll(() => supabase.from('job_payments').select('*').eq('job_id', id).order('received_on').order('id')),
+      fetchAll(() => supabase.from('expenses').select('*').eq('job_id', id).order('expense_date').order('id')),
+      fetchAll(() => supabase.from('time_entries').select('*').eq('job_id', id).order('work_date').order('id')),
+      fetchAll(() => supabase.from('estimates').select('id, number, total, status').eq('job_id', id).order('number')),
+    ]);
+    return { job, financials, payments, expenses, timeEntries, estimates };
+  },
+  saveJob: (row) => save('jobs', JOB_FIELDS, row),
+  deleteJob: (id) => remove('jobs', id),
+  saveJobFinancials: async (row) =>
+    unwrap(await supabase.from('job_financials').upsert(pick(row, FINANCIAL_FIELDS), { onConflict: 'job_id' }).select().single()),
+  savePayment: (row) => save('job_payments', PAYMENT_FIELDS, row),
+  deletePayment: (id) => remove('job_payments', id),
 };

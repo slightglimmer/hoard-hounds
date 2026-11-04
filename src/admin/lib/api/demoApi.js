@@ -137,6 +137,73 @@ export const demoApi = {
     store.estimates = store.estimates.filter((e) => e.id !== id);
   },
 
+  async listCustomers() {
+    await wait();
+    return copy([...store.customers].sort((a, b) => a.full_name.localeCompare(b.full_name)));
+  },
+  async saveCustomer(row) {
+    await wait();
+    return copy(upsert(store.customers, row, {}));
+  },
+  async deleteCustomer(id) {
+    await wait();
+    store.customers = store.customers.filter((c) => c.id !== id);
+    for (const j of store.jobs) if (j.customer_id === id) j.customer_id = null;
+  },
+
+  async listJobsWithMoney() {
+    await wait();
+    return copy({
+      jobs: [...store.jobs].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)),
+      financials: store.financials,
+      payments: store.payments.filter((p) => p.job_id),
+      expenses: store.expenses.filter((e) => e.job_id),
+      timeEntries: store.timeEntries.filter((t) => t.job_id),
+      customers: store.customers,
+    });
+  },
+  async getJob(id) {
+    await wait();
+    const job = store.jobs.find((j) => j.id === id);
+    if (!job) throw new Error('That job no longer exists.');
+    return copy({
+      job,
+      financials: store.financials.find((f) => f.job_id === id) ?? null,
+      payments: store.payments.filter((p) => p.job_id === id).sort((a, b) => (a.received_on < b.received_on ? -1 : 1)),
+      expenses: store.expenses.filter((e) => e.job_id === id).sort((a, b) => (a.expense_date < b.expense_date ? -1 : 1)),
+      timeEntries: store.timeEntries.filter((t) => t.job_id === id),
+      estimates: store.estimates.filter((e) => e.job_id === id).map(({ id: eid, number, total, status }) => ({ id: eid, number, total, status })),
+    });
+  },
+  async saveJob(row) {
+    await wait();
+    return copy(upsert(store.jobs, row, { status: 'lead' }));
+  },
+  async deleteJob(id) {
+    await wait();
+    // Same as the database: payments and money details go with the job;
+    // linked expenses, hours and estimates are kept, just unlinked.
+    store.jobs = store.jobs.filter((j) => j.id !== id);
+    store.financials = store.financials.filter((f) => f.job_id !== id);
+    store.payments = store.payments.filter((p) => p.job_id !== id);
+    for (const list of [store.expenses, store.timeEntries, store.estimates]) for (const r of list) if (r.job_id === id) r.job_id = null;
+  },
+  async saveJobFinancials(row) {
+    await wait();
+    const existing = store.financials.find((f) => f.job_id === row.job_id);
+    if (existing) Object.assign(existing, row);
+    else store.financials.push({ is_demo: true, ...row });
+    return copy(store.financials.find((f) => f.job_id === row.job_id));
+  },
+  async savePayment(row) {
+    await wait();
+    return copy(upsert(store.payments, row, {}));
+  },
+  async deletePayment(id) {
+    await wait();
+    store.payments = store.payments.filter((p) => p.id !== id);
+  },
+
   async hasDemoData() {
     return true;
   },

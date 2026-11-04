@@ -56,12 +56,44 @@ export function buildDemoData(today = new Date()) {
   const expenses = [];
   const payments = [];
   const timeEntries = [];
-  const add = (expense_date, vendor, description, category, amount, payment_method = 'card') => {
+  const jobs = [];
+  const financials = [];
+  const add = (expense_date, vendor, description, category, amount, payment_method = 'card', job_id = null) => {
     if (expense_date > todayStr) return;
     expenses.push({
       id: newId(), expense_date, vendor, description, category_id: cat(category), amount: amount.toFixed(2),
-      payment_method, notes: null, recurring_expense_id: null, is_demo: true, created_at: stamp,
+      payment_method, notes: null, recurring_expense_id: null, job_id, is_demo: true, created_at: stamp,
     });
+  };
+
+  // Sample customers, reused across jobs the way real repeat clients would be.
+  const customers = [
+    ['Sample Realtor Dana', 'Sample Realty Group', 'real_estate_agent'],
+    ['Sample Investor Marcus', 'Sample Holdings LLC', 'investor'],
+    ['Sample Landlord Priya', null, 'landlord'],
+    ['Sample Property Manager Lee', 'Sample Property Co.', 'property_manager'],
+    ['Sample Estate Rep. Gloria', null, 'estate_representative'],
+    ['Sample Homeowner Tom', null, 'homeowner'],
+    ['Sample Homeowner Keisha', null, 'homeowner'],
+  ].map(([full_name, company, customer_type]) => ({
+    id: newId(), full_name, company, customer_type, email: null, phone: null, notes: 'Sample customer', is_demo: true,
+  }));
+  const SERVICE_NAMES = ['Vacant Property Cleanouts', 'Estate Cleanouts', 'Rental Property Cleanouts', 'Furniture & Junk Removal', 'Investor Property Cleanouts', 'Garage & Basement Cleanouts'];
+  const STREETS = ['Beech Daly Rd', 'Inkster Rd', 'Five Mile Rd', 'Telegraph Rd', 'Plymouth Rd', 'Grand River Ave', 'Joy Rd', 'Seven Mile Rd'];
+  const CITIES = ['Redford', 'Detroit', 'Livonia', 'Dearborn', 'Southfield', 'Westland'];
+  let jobCount = 0;
+  const makeJob = (date, status) => {
+    jobCount += 1;
+    const customer = customers[Math.floor(rand() * customers.length)];
+    const service = SERVICE_NAMES[Math.floor(rand() * SERVICE_NAMES.length)];
+    const job = {
+      id: newId(), customer_id: customer.id, title: `${service.replace(/s$/, '')} (sample)`,
+      property_address: `${100 + jobCount * 7} ${STREETS[jobCount % STREETS.length]}, ${CITIES[jobCount % CITIES.length]}, MI`,
+      service_type: service, status, scheduled_date: date, completed_date: status === 'completed' ? date : null,
+      crew_notes: null, is_demo: true, created_at: stamp,
+    };
+    jobs.push(job);
+    return job;
   };
 
   // Fifteen months of sample activity, ending today.
@@ -71,18 +103,29 @@ export function buildDemoData(today = new Date()) {
     const m = first.getMonth();
     const day = (d) => toISODate(new Date(y, m, d));
     const season = [0.55, 0.6, 0.85, 1, 1.15, 1.2, 1.25, 1.2, 1.1, 1, 0.8, 0.6][m];
-    const jobs = Math.max(2, Math.round(5 * season + rand() * 2));
+    const jobsThisMonth = Math.max(2, Math.round(5 * season + rand() * 2));
 
-    for (let j = 0; j < jobs; j += 1) {
+    for (let j = 0; j < jobsThisMonth; j += 1) {
       const d = day(2 + Math.floor(rand() * 26));
-      if (d > todayStr) continue;
-      const price = between(380, 1450);
-      payments.push({ id: newId(), received_on: d, kind: 'deposit', amount: '150.00', is_demo: true });
-      payments.push({ id: newId(), received_on: d, kind: 'payment', amount: (price - 150).toFixed(2), is_demo: true });
-      add(d, 'Sample Landfill', 'Disposal fee (sample job)', 'Dump & disposal fees', between(65, 210));
-      if (rand() > 0.35) add(d, 'Sample Truck Rental', 'Box truck, 1 day (sample)', 'Truck rental', between(110, 160));
-      timeEntries.push({ id: newId(), work_date: d, hours: between(4, 8).toFixed(2), hourly_rate: '20.00', is_demo: true });
-      if (price > 800) timeEntries.push({ id: newId(), work_date: d, hours: between(4, 7).toFixed(2), hourly_rate: '18.50', is_demo: true });
+      const price = Math.round(between(380, 1450));
+      if (d > todayStr) {
+        // Upcoming work: scheduled with a deposit, or still a lead.
+        const job = makeJob(d, rand() > 0.4 ? 'scheduled' : 'quoted');
+        financials.push({ job_id: job.id, quoted_amount: price.toFixed(2), agreed_price: job.status === 'scheduled' ? price.toFixed(2) : null, admin_notes: null, is_demo: true });
+        if (job.status === 'scheduled') payments.push({ id: newId(), job_id: job.id, received_on: todayStr, kind: 'deposit', amount: '150.00', method: 'card', notes: null, is_demo: true });
+        continue;
+      }
+      const job = makeJob(d, 'completed');
+      financials.push({ job_id: job.id, quoted_amount: price.toFixed(2), agreed_price: price.toFixed(2), admin_notes: null, is_demo: true });
+      payments.push({ id: newId(), job_id: job.id, received_on: d, kind: 'deposit', amount: '150.00', method: 'card', notes: null, is_demo: true });
+      // A couple of recent jobs still owe their balance.
+      if (back > 0 || rand() > 0.5) {
+        payments.push({ id: newId(), job_id: job.id, received_on: d, kind: 'payment', amount: (price - 150).toFixed(2), method: 'card', notes: null, is_demo: true });
+      }
+      add(d, 'Sample Landfill', 'Disposal fee', 'Dump & disposal fees', between(65, 210), 'card', job.id);
+      if (rand() > 0.35) add(d, 'Sample Truck Rental', 'Box truck, 1 day', 'Truck rental', between(110, 160), 'card', job.id);
+      timeEntries.push({ id: newId(), job_id: job.id, work_date: d, hours: between(4, 8).toFixed(2), hourly_rate: '20.00', is_demo: true });
+      if (price > 800) timeEntries.push({ id: newId(), job_id: job.id, work_date: d, hours: between(4, 7).toFixed(2), hourly_rate: '18.50', is_demo: true });
     }
 
     add(day(4), 'Sample Gas Station', 'Fuel', 'Fuel', between(90, 180));
@@ -110,7 +153,7 @@ export function buildDemoData(today = new Date()) {
     while (row.next_due_date < monthStart) {
       expenses.push({
         id: newId(), expense_date: row.next_due_date, vendor: row.vendor, description: row.description, category_id: row.category_id,
-        amount: row.amount, payment_method: row.payment_method, notes: null, recurring_expense_id: row.id, is_demo: true, created_at: stamp,
+        amount: row.amount, payment_method: row.payment_method, notes: null, recurring_expense_id: row.id, job_id: null, is_demo: true, created_at: stamp,
       });
       row.occurrences_posted += 1;
       row.next_due_date = recurrenceDate(row.start_date, row.frequency, row.occurrences_posted);
@@ -150,5 +193,14 @@ export function buildDemoData(today = new Date()) {
     };
   });
 
-  return { categories, expenses, recurring, payments, timeEntries, priceItems, estimates };
+  // A brand-new lead with no date yet.
+  const lead = makeJob(null, 'lead');
+  financials.push({ job_id: lead.id, quoted_amount: null, agreed_price: null, admin_notes: null, is_demo: true });
+  // And one happening today.
+  const current = makeJob(todayStr, 'in_progress');
+  financials.push({ job_id: current.id, quoted_amount: '875.00', agreed_price: '875.00', admin_notes: null, is_demo: true });
+  payments.push({ id: newId(), job_id: current.id, received_on: todayStr, kind: 'deposit', amount: '150.00', method: 'card', notes: null, is_demo: true });
+  add(todayStr, 'Sample Truck Rental', 'Box truck, 1 day', 'Truck rental', 139, 'card', current.id);
+
+  return { categories, expenses, recurring, payments, timeEntries, priceItems, estimates, customers, jobs, financials };
 }

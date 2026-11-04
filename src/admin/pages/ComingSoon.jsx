@@ -2,22 +2,16 @@ import AdminIcon from '../components/AdminIcon.jsx';
 import { PageHeader } from '../components/ui.jsx';
 
 const PLANNED = {
-  '/jobs': {
-    title: 'Jobs',
-    icon: 'truck',
-    phase: 'Phase 4',
-    points: ['Customers and job status from lead to completed', 'Deposits and payments received', 'Disposal, truck rental and labor costs, and profit per job'],
-  },
   '/employees': {
     title: 'Employees',
     icon: 'users',
-    phase: 'Phase 5',
+    phase: 'Phase 4',
     points: ['Employee profiles and hourly rates', 'Job assignments and logged hours', 'Estimated gross wages (no payroll processing)'],
   },
   '/reports': {
     title: 'Reports',
     icon: 'chart',
-    phase: 'Phase 6',
+    phase: 'Phase 5',
     points: ['Monthly revenue, expense and profit charts', 'Year-over-year comparisons', 'A tax-year export pack for your bookkeeper'],
   },
 };

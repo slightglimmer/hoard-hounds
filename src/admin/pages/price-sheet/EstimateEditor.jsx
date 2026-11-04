@@ -216,6 +216,40 @@ export default function EstimateEditor({ id }) {
     if (validate()) window.print();
   }
 
+  // Creates a job (and a customer, if needed) from this saved estimate.
+  async function makeJob() {
+    if (dirty) {
+      notify('Save your changes first, then turn it into a job.', 'error');
+      return;
+    }
+    setBusy(true);
+    try {
+      let customerId = saved.customer_id;
+      if (!customerId) {
+        const customer = await api.saveCustomer({
+          full_name: saved.customer_name, phone: saved.customer_phone || '', email: saved.customer_email || '',
+          company: '', customer_type: null, notes: '',
+        });
+        customerId = customer.id;
+      }
+      const accepted = saved.status === 'accepted';
+      const job = await api.saveJob({
+        title: `${saved.customer_name} cleanout`, customer_id: customerId, property_address: saved.property_address || '',
+        service_type: null, status: accepted ? 'scheduled' : 'quoted', scheduled_date: null, completed_date: null,
+        crew_notes: saved.notes || '',
+      });
+      await api.saveJobFinancials({
+        job_id: job.id, quoted_amount: saved.total, agreed_price: accepted ? saved.total : null, admin_notes: `From estimate #${saved.number}`,
+      });
+      await api.saveEstimate({ id: saved.id, job_id: job.id, customer_id: customerId });
+      notify('Job created from this estimate');
+      window.location.hash = `#/jobs/${job.id}`;
+    } catch (err) {
+      notify(err.message, 'error');
+      setBusy(false);
+    }
+  }
+
   async function remove() {
     if (!confirmDelete) {
       setConfirmDelete(true);
@@ -434,6 +468,19 @@ export default function EstimateEditor({ id }) {
               <button type="button" className="btn-ghost" onClick={copyText}>Copy text</button>
               <button type="button" className="btn-ghost" onClick={print}>Print / PDF</button>
             </div>
+            {saved?.job_id ? (
+              <a href={`#/jobs/${saved.job_id}`} className="btn-soft w-full">
+                <AdminIcon name="truck" className="h-4 w-4" />
+                Open the job
+              </a>
+            ) : (
+              saved && (
+                <button type="button" className="btn-soft w-full" onClick={makeJob} disabled={busy}>
+                  <AdminIcon name="truck" className="h-4 w-4" />
+                  Turn into a job
+                </button>
+              )
+            )}
             {saved && (
               <button type="button" onClick={remove} disabled={busy} className={confirmDelete ? 'btn-danger w-full' : 'btn-ghost w-full text-danger'}>
                 {confirmDelete ? 'Yes, delete this estimate' : 'Delete estimate'}

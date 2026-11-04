@@ -7,6 +7,7 @@ import Overview from './pages/Overview.jsx';
 import ComingSoon, { COMING_SOON_ROUTES } from './pages/ComingSoon.jsx';
 import ExpensesPage from './pages/expenses/ExpensesPage.jsx';
 import PriceSheetPage from './pages/price-sheet/PriceSheetPage.jsx';
+import JobsPage from './pages/jobs/JobsPage.jsx';
 import {
   AuthError, Forbidden, Loading, MfaEnroll, MfaVerify, NotConfigured, SetNewPassword, SignIn, UnsafeKey,
 } from './pages/auth/AuthScreens.jsx';
@@ -14,6 +15,7 @@ import {
 function Page({ route }) {
   if (route.startsWith('/expenses')) return <ExpensesPage route={route} />;
   if (route.startsWith('/price-sheet')) return <PriceSheetPage route={route} />;
+  if (route === '/jobs' || route.startsWith('/jobs/')) return <JobsPage route={route} />;
   if (COMING_SOON_ROUTES.includes(route)) return <ComingSoon route={route} />;
   return <Overview />;
 }
