@@ -32,6 +32,11 @@ jobs:
           # (e.g. your Formspree URL). Until it's set, the quote form stays in preview mode.
           VITE_FORM_PROVIDER: endpoint
           VITE_FORM_ENDPOINT: ${{ vars.VITE_FORM_ENDPOINT }}
+          # Supabase project URL and PUBLISHABLE key (public by design; the database's
+          # security rules protect the data). Never put a secret or service_role key here.
+          # Until both are set, /admin shows setup instructions instead of signing in.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

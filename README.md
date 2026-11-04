@@ -196,6 +196,9 @@ Designer, Inkscape or Figma) and **convert the text to outlines** so it prints c
 ```
 hoard-hounds/ (this repository)
 ├── index.html, privacy.html   Page shells: SEO tags, fonts, hidden Netlify form
+├── admin/index.html           Admin dashboard page shell (not indexed by search engines)
+├── supabase/                  Database tables, security rules and optional demo data
+├── docs/ADMIN_SETUP.md        Connecting the admin to Supabase, step by step
 ├── netlify.toml               Netlify build and form settings
 ├── scripts/prerender.js       Turns each page into static HTML after the build
 ├── public/                    Images, logo files, favicon, robots.txt, sitemap.xml
@@ -207,7 +210,8 @@ hoard-hounds/ (this repository)
     ├── index.css              Tailwind setup, brand colors, fonts, buttons, animations
     ├── lib/submitQuote.js     Photo resizing and sending the quote form
     ├── components/            Header, Footer, Logo, Icon, Reveal (scroll animation), mobile call bar
-    └── sections/              Hero, Services, HowItWorks, WhoWeServe, About, QuoteForm, ServiceArea, FAQ
+    ├── sections/              Hero, Services, HowItWorks, WhoWeServe, About, QuoteForm, ServiceArea, FAQ
+    └── admin/                 The admin dashboard (its own styles, sign-in, pages and data layer)
 ```
 
 **Built in:** mobile, tablet and desktop layouts; a sticky header with a quote button; a click-to-call bar on phones;
@@ -215,3 +219,22 @@ smooth scrolling; subtle scroll animations that switch off for visitors who pref
 screen-reader friendly navigation and form; color contrast that meets WCAG AA; and SEO titles, descriptions, Open
 Graph tags, a sitemap and schema.org data targeting Detroit property cleanouts, Redford junk removal and Metro Detroit
 estate cleanouts.
+
+---
+
+## 8. Admin dashboard (/admin)
+
+A private business dashboard for the owner: an overview of revenue, expenses, estimated labor and
+net profit, plus an expense tracker with recurring charges, categories and CSV export. Price sheet,
+jobs, employees and reports are coming in later phases.
+
+- **Setup:** follow [docs/ADMIN_SETUP.md](docs/ADMIN_SETUP.md) to create the Supabase database and
+  connect it. Until then, the live /admin page shows setup instructions and nothing else.
+- **Security:** sign-in needs a password plus an authenticator app, and the database itself
+  enforces who can see what (row-level security in `supabase/migrations/`). The site only
+  holds Supabase's public "publishable" key.
+- **Try it locally:** `npm run dev`, then open http://localhost:5173/admin/. Without Supabase
+  settings it runs in **demo mode** with clearly labeled sample data, and nothing is saved.
+- The public site doesn't load any admin code, and the admin has its own stylesheet
+  (`src/admin/admin.css`), so changes to one don't affect the other.
+

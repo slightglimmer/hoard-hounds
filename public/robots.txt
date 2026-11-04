@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /employee/
 
 Sitemap: https://hoardhounds.com/sitemap.xml

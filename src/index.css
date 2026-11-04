@@ -1,4 +1,7 @@
 @import 'tailwindcss';
+/* The admin dashboard has its own stylesheet (src/admin/admin.css). */
+@source not './admin';
+@source not '../supabase';
 
 @theme {
   --color-forest: #243b32;
