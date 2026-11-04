@@ -1,128 +1,103 @@
-# Admin dashboard setup (Supabase)
+# Setting up your admin dashboard
 
-The admin dashboard at **hoardhounds.com/admin** keeps your business records in a Supabase database.
-This guide connects the two. It takes about 20 minutes, and you only do it once.
+This connects hoardhounds.com/admin to a free database, which is where your business records are kept.
+There are 5 steps. You only do this once. Stuck? Send Claude a screenshot.
 
-> Nothing here changes the public website. Until steps 1–6 are done, /admin just shows
-> "Admin isn't connected yet".
+---
 
-## How your data is protected
+## Step 1: Make a free Supabase account
 
-- **The database enforces the rules itself** (row-level security). Every table refuses anyone who
-  isn't signed in. Business records are readable only by an **admin who has finished two-step
-  login** (password + authenticator app). The website can't override this. Even someone who
-  copies the site's code or steals your password gets nothing without your phone.
-- **The website only ever holds the "publishable" key.** It's designed to be public. Supabase also
-  gives you a **secret** key (older projects call it `service_role`): that one bypasses every rule,
-  so it must **never** go into GitHub, the website, or an email. The admin refuses to start if one
-  is configured by mistake.
-- **No sign-ups.** You turn public sign-up off, so the only accounts are ones you create.
-- **Admins can only be created in the Supabase SQL editor**, not from the app.
-- Employees (coming later) get their own role: they'll see only their own profile, the jobs
-  they're assigned to (no prices or payments), and their own hours.
+1. Go to **supabase.com** and click **Start your project**.
+2. Sign up. Using **Continue with GitHub** is easiest.
+3. Click **New project**.
+   - **Name:** `hoard-hounds`
+   - **Database password:** click **Generate a password**, then **save it somewhere safe**
+     (like your phone's password manager). You'll rarely need it, but don't lose it.
+   - **Region:** pick one that says **East US**.
+4. Click **Create new project** and wait about 2 minutes.
 
-## 1. Create a Supabase project
+## Step 2: Add yourself as a user
 
-1. Go to [supabase.com](https://supabase.com) and sign up (the free plan is fine to start).
-2. Click **New project**. Name it `hoard-hounds`, choose a US East region, and create a strong
-   database password. **Save that password in your password manager.**
-3. Wait a minute or two for the project to finish setting up.
+1. On the left side, click **Authentication** (the icon looks like a person or a key).
+2. Click **Users**, then the **Add user** button, then **Create new user**.
+3. Type your email, `johnice.edward@gmail.com`, and make up a password.
+   Use **at least 12 characters**, like a short sentence.
+4. Make sure **Auto Confirm User** is checked, then click **Create user**.
 
-> **Free plan notes:** free projects pause after about a week with no activity. If the admin
-> says it can't reach the server, open the Supabase dashboard and click **Restore/Resume**.
-> Check Supabase's pricing page for what backups each plan includes. Until you're on a plan
-> with backups, export your expenses to CSV each month (Expenses → This year → Export CSV).
+That email and password is what you'll use to log in to your dashboard.
 
-## 2. Create the tables and security rules
+## Step 3: Paste one block of setup code
 
-1. In your project, open **SQL Editor** → **New query**.
-2. Open `supabase/migrations/20261104000001_schema.sql` from this repository (on GitHub, click the
-   file, then the copy button). Paste it in and click **Run**. You should see "Success".
-3. New query again. Paste `supabase/migrations/20261104000002_security.sql` and click **Run**.
+1. On the left side, click **SQL Editor**.
+2. Open this file on GitHub: **supabase/setup_everything.sql**
+   (in the `admin-dashboard` branch). Click the **copy** button at the top right of the file.
+3. Back in Supabase, paste it into the big empty box and click **Run** at the bottom right.
+4. At the bottom you should see: **"All done! Your database is set up and you are the admin."**
 
-Run them in that order, once each.
+If a warning pops up about "destructive operations", click **Run this query**. It's safe.
 
-**Optional sample data:** to explore with made-up numbers first, also run `supabase/seed_demo.sql`.
-Every sample row is labeled **Demo** in the app. Remove them all later with the
-**Clear demo data** button, or by running `select public.clear_demo_data();` while signed in as an
-admin. Your real records and expense categories are kept.
+## Step 4: Turn off sign-ups
 
-## 3. Lock down sign-in
+This stops strangers from making accounts.
 
-In **Authentication**:
+1. Click **Authentication** on the left, then **Sign In / Providers**.
+2. Turn **off** the switch that says **Allow new users to sign up**. Click **Save** if you see one.
+3. Still in Authentication, click **URL Configuration**.
+4. In **Site URL**, type `https://hoardhounds.com/admin/` and click **Save**.
 
-1. **Sign In / Providers** (may be called *Providers* or *Settings*): turn **off** "Allow new users
-   to sign up". Keep **Email** turned on.
-2. Under the Email provider, set the **minimum password length to 12** if the option is there.
-3. **Multi-Factor** (or *MFA*): make sure **TOTP (authenticator app)** is enabled. It is by default.
-4. **URL Configuration**:
-   - **Site URL:** `https://hoardhounds.com/admin/`
-   - **Redirect URLs:** add `https://hoardhounds.com/admin/**`
-     (and `http://localhost:5173/admin/**` if you'll run the site on your computer).
+## Step 5: Send Claude two things
 
-## 4. Create your login
+1. Click the **Connect** button at the top of your Supabase project
+   (or go to **Project Settings → API Keys**).
+2. Copy and send Claude:
+   - the **Project URL**. It looks like `https://abcdefgh.supabase.co`
+   - the **Publishable key**. It starts with **`sb_publishable_`**
 
-1. **Authentication → Users → Add user → Create new user.**
-2. Enter `johnice.edward@gmail.com` and a strong password (12+ characters). Tick
-   **Auto Confirm User**, then create the user.
+These two are **safe to share**: they're like your store's street address.
 
-## 5. Make yourself an admin
+**Do NOT send** anything that says **secret** or **service_role**. That's the master key.
+If you're not sure, send a screenshot first and Claude will point to the right one.
 
-In **SQL Editor**, run:
+Claude does the rest. After you say it's OK to go live, you'll log in at **hoardhounds.com/admin**,
+and it will walk you through connecting an authenticator app on your phone.
 
-```sql
-insert into public.user_roles (user_id, role)
-select id, 'admin' from auth.users where email = 'johnice.edward@gmail.com';
-```
+---
 
-It should say "1 row affected". (This is the only way to create an admin, on purpose.)
+## Later, if you need them
 
-## 6. Connect the website
-
-1. In Supabase, open **Project Settings → API Keys** (or click **Connect** on the project home).
-   Copy:
-   - the **Project URL**, like `https://abcdefghijk.supabase.co`
-   - the **Publishable key**, starting with `sb_publishable_`. Older projects show an
-     **anon public** key instead, which also works. **Not** the secret / service_role key.
-2. In GitHub: **slightglimmer/hoard-hounds → Settings → Secrets and variables → Actions →
-   Variables tab → New repository variable**. Add two variables:
-   - `VITE_SUPABASE_URL`, set to the Project URL
-   - `VITE_SUPABASE_PUBLISHABLE_KEY`, set to the publishable key
-
-These are "variables", not "secrets", because both values are public by design.
-
-## 7. Publish and sign in
-
-The admin goes live when the `admin-dashboard` branch is merged into `main`, which you'll approve.
-After that deploy finishes:
-
-1. Go to **hoardhounds.com/admin** and sign in.
-2. You'll be asked to **set up two-step login**: install an authenticator app (Google
-   Authenticator, Microsoft Authenticator, 1Password or Authy), scan the QR code, and type the
-   6-digit code.
-3. From then on, each sign-in asks for your password and a fresh code from the app.
-
-## Lost your phone or authenticator app?
-
-In Supabase **SQL Editor**, run this to remove your authenticator. Then sign in with your password
-and set up a new one:
+**Lost your phone or authenticator app?** In Supabase, open **SQL Editor**, paste this and click **Run**.
+Then log in with just your password and set up the app again.
 
 ```sql
 delete from auth.mfa_factors
 where user_id = (select id from auth.users where email = 'johnice.edward@gmail.com');
 ```
 
-Forgot your password? Use **Forgot your password?** on the sign-in page. The reset link opens
-the admin, asks for your authenticator code, then lets you choose a new password.
+**Forgot your password?** Click **Forgot your password?** on the login page.
 
-## Good to know
+**The dashboard says it can't reach the server?** Free Supabase projects fall asleep after about a
+week of no use. Log in to supabase.com and click **Restore project**.
 
-- **Labor costs are estimates:** hours × hourly rate, before employer taxes. This app doesn't run
-  payroll. If you pay wages through a payroll service, don't also enter those wages as expenses,
-  or labor will be counted twice on the Overview.
-- **Revenue** on the Overview comes from customer payments recorded on jobs (the Jobs section
-  is coming in a later phase).
-- **Tax categories** on expense categories are suggestions to organize your records. Confirm how
-  to report each one with your tax preparer.
-- **Developers:** the files in `supabase/migrations/` also work with the Supabase CLI
-  (`supabase link` then `supabase db push`).
+**Back up your records:** on the free plan, export your expenses each month:
+Expenses → This year → Export CSV.
+
+---
+
+## Technical notes (for developers)
+
+- `supabase/setup_everything.sql` is the two files in `supabase/migrations/` combined, plus a line
+  that makes johnice.edward@gmail.com an admin. The migrations also work with the Supabase CLI
+  (`supabase link`, then `supabase db push`).
+- Every table uses row-level security. Admin access requires the `admin` role **and** two-step
+  login (the `aal2` claim). Admins can only be created in the SQL editor. The future employee role
+  sees only its own profile, assigned jobs (no money fields) and its own unapproved hours.
+- The site only holds the publishable key. It's public by design, and the database rules protect
+  the data. The admin refuses to start if a secret or service_role key is configured.
+- The two values go in the GitHub Actions variables `VITE_SUPABASE_URL` and
+  `VITE_SUPABASE_PUBLISHABLE_KEY`, or directly in `.github/workflows/deploy.yml`.
+- Optional sample data: `supabase/seed_demo.sql`. Every row is labeled **Demo**, and the
+  dashboard has a **Clear demo data** button.
+- Labor cost is an estimate (hours × rate, before employer taxes). If wages are paid through a
+  payroll service, don't also enter them as expenses, or labor is counted twice.
+- Redirect URLs for password reset: add `https://hoardhounds.com/admin/**` under
+  Authentication → URL Configuration → Redirect URLs.
