@@ -63,6 +63,19 @@ async function remove(table, id) {
   unwrap(await supabase.from(table).delete().eq('id', id));
 }
 
+// Calls the stripe-payments server function (it holds the Stripe secret key, not the website).
+async function callPayments(body) {
+  const { data, error } = await supabase.functions.invoke('stripe-payments', { body });
+  if (!error) return data;
+  let message = '';
+  try {
+    message = (await error.context.json()).error;
+  } catch {
+    // No readable error body: most likely the function hasn't been set up.
+  }
+  throw new Error(message || 'Online payments aren’t set up yet. See “Online payments” in docs/ADMIN_SETUP.md.');
+}
+
 export const supabaseApi = {
   listCategories: () =>
     fetchAll(() => supabase.from('expense_categories').select('*').order('sort_order').order('name').order('id')),
@@ -186,6 +199,18 @@ export const supabaseApi = {
     fetchAll(() => supabase.from('jobs').select('id, title, status, scheduled_date, completed_date').order('created_at', { ascending: false }).order('id')),
   assignEmployee: async (jobId, employeeId) =>
     unwrap(await supabase.from('job_assignments').insert({ job_id: jobId, employee_id: employeeId }).select().single()),
+  // Online payments (Stripe). Returns null if the database update for them hasn't been run yet.
+  async listPaymentRequests(jobId) {
+    const { data, error } = await supabase.from('payment_requests').select('*').eq('job_id', jobId).order('created_at', { ascending: false });
+    if (error) {
+      if (['42P01', 'PGRST205'].includes(error.code)) return null;
+      throw friendlyError(error);
+    }
+    return data;
+  },
+  requestPayment: (fields) => callPayments({ action: 'create', ...fields }).then((d) => d.request),
+  cancelPaymentRequest: (id) => callPayments({ action: 'cancel', request_id: id }),
+
   unassignEmployee: async (jobId, employeeId) =>
     unwrap(await supabase.from('job_assignments').delete().eq('job_id', jobId).eq('employee_id', employeeId)),
 };

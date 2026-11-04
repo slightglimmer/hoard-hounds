@@ -226,5 +226,5 @@ export function buildDemoData(today = new Date()) {
   // Crew already lined up for upcoming work.
   for (const job of jobs.filter((j) => j.status === 'scheduled')) assignments.push({ job_id: job.id, employee_id: employees[0].id, is_demo: true });
 
-  return { categories, expenses, recurring, payments, timeEntries, priceItems, estimates, customers, jobs, financials, employees, assignments };
+  return { categories, expenses, recurring, payments, timeEntries, priceItems, estimates, customers, jobs, financials, employees, assignments, paymentRequests: [] };
 }

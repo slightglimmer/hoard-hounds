@@ -254,6 +254,38 @@ export const demoApi = {
     return n;
   },
 
+  async listPaymentRequests(jobId) {
+    await wait();
+    return copy(store.paymentRequests.filter((r) => r.job_id === jobId).sort((a, b) => (a.created_at < b.created_at ? 1 : -1)));
+  },
+  async requestPayment({ job_id, kind, amount_cents, description }) {
+    await wait(500);
+    const request = {
+      id: newId(), job_id, kind, amount: (amount_cents / 100).toFixed(2), description: description || null,
+      stripe_payment_link_id: `plink_demo_${Date.now()}`, url: `https://buy.stripe.com/demo_${Math.random().toString(36).slice(2, 10)}`,
+      status: 'open', job_payment_id: null, is_demo: true, created_at: new Date().toISOString(),
+    };
+    store.paymentRequests.push(request);
+    return copy(request);
+  },
+  async cancelPaymentRequest(id) {
+    await wait();
+    const r = store.paymentRequests.find((x) => x.id === id);
+    if (r?.status === 'open') r.status = 'cancelled';
+  },
+  // Demo only: pretends the customer paid, the way the Stripe webhook records it.
+  async simulateOnlinePayment(id) {
+    await wait(400);
+    const r = store.paymentRequests.find((x) => x.id === id);
+    if (!r || r.status !== 'open') return;
+    const payment = {
+      id: newId(), job_id: r.job_id, received_on: new Date().toLocaleDateString('en-CA'), kind: r.kind, amount: r.amount,
+      method: 'other', notes: 'Paid online with Klarna through Stripe (demo)', is_demo: true, created_at: new Date().toISOString(),
+    };
+    store.payments.push(payment);
+    Object.assign(r, { status: 'paid', job_payment_id: payment.id });
+  },
+
   async listJobsBrief() {
     await wait();
     return copy(store.jobs.map(({ id, title, status, scheduled_date, completed_date }) => ({ id, title, status, scheduled_date, completed_date })));

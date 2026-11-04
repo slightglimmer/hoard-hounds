@@ -70,8 +70,49 @@ Some new dashboard features need a small addition to your database. Claude will 
 - **Price Sheet & Estimates (Phase 2):** in Supabase, open **SQL Editor**, paste everything from
   **supabase/migrations/20261105000003_estimates.sql**, and click **Run**. It should say
   **"All done! Estimates are set up."**
+- **Online payments:** see "Online payments: cards and Klarna (Stripe)" above.
 
 (Setting up from scratch? `supabase/setup_everything.sql` already includes every update.)
+
+---
+
+## Online payments: cards and Klarna (Stripe)
+
+Lets you text or email customers a secure payment link from any job. They pay by card, or over
+time with Klarna (subject to approval), and the payment is recorded on the job automatically.
+Do these once, in order. Claude can walk you through each one.
+
+1. **Create your Stripe account** at stripe.com and finish **activating** it (business details for
+   Hoard Hounds LLC and your business bank account).
+2. **Turn on Klarna:** Stripe dashboard → **Settings → Payments → Payment methods** → **Klarna** →
+   turn it on (Affirm too, if you like). Cards are on already.
+3. **Database update:** Supabase → **SQL Editor** → paste everything from
+   **supabase/migrations/20261105000004_online_payments.sql** → **Run**. It should say
+   *"All done! Online payments are set up in your database."*
+4. **Add two server functions:** Supabase → **Edge Functions** → **Deploy a new function** →
+   **Via editor**:
+   - Name it `stripe-payments`, paste everything from **supabase/functions/stripe-payments/index.ts**,
+     and deploy.
+   - Do the same for `stripe-webhook` with **supabase/functions/stripe-webhook/index.ts**. Then open
+     its settings and turn **off** "Verify JWT" (also called "Enforce JWT verification"). Stripe
+     uses its own signature instead, which the function checks.
+5. **Add your Stripe secret key:** Stripe → **Developers → API keys** → copy the **Secret key**.
+   Supabase → **Edge Functions → Secrets** → add a secret named `STRIPE_SECRET_KEY` and paste it there.
+   **Never paste the secret key anywhere else**: not in chat, not in GitHub, not in the website.
+6. **Tell Stripe where to send payments:** Stripe → **Developers → Webhooks** (Stripe may call
+   these "event destinations") → add an endpoint:
+   - URL: `https://cvzodwrgxlgxrtpeszri.supabase.co/functions/v1/stripe-webhook`
+   - Events: `checkout.session.completed` and `checkout.session.async_payment_succeeded`
+   - Copy its **Signing secret** (starts with `whsec_`) into Supabase **Edge Functions → Secrets**
+     as `STRIPE_WEBHOOK_SECRET`.
+
+**Try it in test mode first:** Stripe has a test mode with its own keys (`sk_test_…`) and webhook.
+Pay a test link with card number `4242 4242 4242 4242`, any future date and any CVC, then check that
+the payment appears on the job. Then repeat steps 5 and 6 with your live keys.
+
+Good to know: Stripe charges a fee on each payment (more for pay-over-time options like Klarna).
+Each link can be paid once. Klarna only appears when Stripe and Klarna approve your business and
+the amount fits their limits.
 
 ---
 

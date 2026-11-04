@@ -8,6 +8,7 @@ import { formatCents, formatMoney, parseAmount } from '../../lib/money.js';
 import { JOB_STATUSES, PAYMENT_KINDS, jobMoney, jobStatus } from '../../lib/jobs.js';
 import { CustomerFields, JobCostForm, PaymentForm, blankCustomer, customerPayload } from './JobForms.jsx';
 import { TimeEntryForm } from '../employees/EmployeeForms.jsx';
+import OnlinePayments from './OnlinePayments.jsx';
 import { TIME_STATUSES, wageCents } from '../../lib/employees.js';
 
 const NEW_CUSTOMER = '__new__';
@@ -353,6 +354,12 @@ export default function JobDetail({ id }) {
                 ) : (
                   <p className="mt-2 text-sm text-muted">No payments yet. Record deposits and payments here and they count as revenue on your Overview.</p>
                 )}
+                <OnlinePayments
+                  job={job}
+                  customer={customers.find((c) => c.id === job.customer_id) ?? null}
+                  balanceCents={money?.balance ?? 0}
+                  onPaid={() => load({ keepEdits: true })}
+                />
               </section>
 
               {/* Costs */}
