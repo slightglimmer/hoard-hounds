@@ -36,7 +36,11 @@
     <link rel="preload" as="image" href="/images/hero-cleared-room.svg" />
 
     <!-- Lets CSS hide scroll-reveal content only when JavaScript is running. -->
-    <script>document.documentElement.classList.add('js')</script>
+    <!-- Switch old http:// links to the secure https:// address, then let CSS know JavaScript is running. -->
+    <script>
+      if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+      document.documentElement.classList.add('js');
+    </script>
     <!--structured-data-->
   </head>
   <body>

@@ -15,7 +15,11 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600..800;1,9..144,500&family=Plus+Jakarta+Sans:wght@400..800&display=swap"
     />
-    <script>document.documentElement.classList.add('js')</script>
+    <!-- Switch old http:// links to the secure https:// address, then let CSS know JavaScript is running. -->
+    <script>
+      if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+      document.documentElement.classList.add('js');
+    </script>
     <!--structured-data-->
   </head>
   <body>
