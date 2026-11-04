@@ -224,9 +224,15 @@ estate cleanouts.
 
 ## 8. Admin dashboard (/admin)
 
-A private business dashboard for the owner: an overview of revenue, expenses, estimated labor and
-net profit, plus an expense tracker with recurring charges, categories and CSV export. Price sheet,
-jobs, employees and reports are coming in later phases.
+A private business dashboard for the owner:
+
+- **Overview:** revenue, expenses, estimated labor and net profit, with a monthly chart.
+- **Expenses:** expenses, recurring bills, categories with suggested tax categories, CSV export.
+- **Price Sheet:** services and prices, plus numbered customer estimates (copy as text or print/PDF).
+- **Jobs:** jobs from lead to completed, customers, payments received, job costs and profit per job.
+- **Employees:** crew, hours per job, approvals and estimated wages (not payroll).
+- **Reports:** the year by month, expenses by tax category, revenue by customer, and a
+  tax-year .zip of CSV files for your bookkeeper.
 
 - **Setup:** follow [docs/ADMIN_SETUP.md](docs/ADMIN_SETUP.md) to create the Supabase database and
   connect it. Until then, the live /admin page shows setup instructions and nothing else.

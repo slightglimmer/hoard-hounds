@@ -94,6 +94,10 @@ export const demoApi = {
     await wait();
     return copy(store.payments.filter((p) => inRange(p.received_on, range)));
   },
+  async listPaymentsDetailed(range) {
+    await wait();
+    return copy(store.payments.filter((p) => inRange(p.received_on, range)));
+  },
   async listTimeEntries(range) {
     await wait();
     return copy(store.timeEntries.filter((t) => inRange(t.work_date, range)));

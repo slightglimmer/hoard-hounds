@@ -92,6 +92,8 @@ export const supabaseApi = {
     fetchAll(() =>
       supabase.from('job_payments').select('id, received_on, kind, amount, is_demo').gte('received_on', from).lte('received_on', to).order('id'),
     ),
+  listPaymentsDetailed: ({ from, to }) =>
+    fetchAll(() => supabase.from('job_payments').select('*').gte('received_on', from).lte('received_on', to).order('received_on').order('id')),
   listTimeEntries: ({ from, to }) =>
     fetchAll(() =>
       supabase.from('time_entries').select('id, work_date, hours, hourly_rate, is_demo').gte('work_date', from).lte('work_date', to).order('id'),

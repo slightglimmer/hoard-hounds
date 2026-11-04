@@ -13,7 +13,7 @@ export const NAV = [
   { path: '/price-sheet', label: 'Price Sheet', icon: 'tag' },
   { path: '/jobs', label: 'Jobs', icon: 'truck' },
   { path: '/employees', label: 'Employees', icon: 'users' },
-  { path: '/reports', label: 'Reports', icon: 'chart', soon: true },
+  { path: '/reports', label: 'Reports', icon: 'chart' },
 ];
 
 function Brand() {
