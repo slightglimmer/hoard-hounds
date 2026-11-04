@@ -48,6 +48,8 @@ const CUSTOMER_FIELDS = ['full_name', 'company', 'customer_type', 'email', 'phon
 const JOB_FIELDS = ['customer_id', 'title', 'property_address', 'service_type', 'status', 'scheduled_date', 'completed_date', 'crew_notes'];
 const FINANCIAL_FIELDS = ['job_id', 'quoted_amount', 'agreed_price', 'admin_notes'];
 const PAYMENT_FIELDS = ['job_id', 'received_on', 'kind', 'amount', 'method', 'notes'];
+const EMPLOYEE_FIELDS = ['full_name', 'email', 'phone', 'hourly_rate', 'active', 'hired_on', 'notes'];
+const TIME_FIELDS = ['employee_id', 'job_id', 'work_date', 'hours', 'hourly_rate', 'status', 'notes'];
 
 async function save(table, fields, row) {
   const values = pick(row, fields);
@@ -142,15 +144,16 @@ export const supabaseApi = {
     return { jobs, financials, payments, expenses, timeEntries, customers };
   },
   async getJob(id) {
-    const [job, financials, payments, expenses, timeEntries, estimates] = await Promise.all([
+    const [job, financials, payments, expenses, timeEntries, estimates, assignments] = await Promise.all([
       supabase.from('jobs').select('*').eq('id', id).single().then(unwrap),
       supabase.from('job_financials').select('*').eq('job_id', id).maybeSingle().then(unwrap),
       fetchAll(() => supabase.from('job_payments').select('*').eq('job_id', id).order('received_on').order('id')),
       fetchAll(() => supabase.from('expenses').select('*').eq('job_id', id).order('expense_date').order('id')),
       fetchAll(() => supabase.from('time_entries').select('*').eq('job_id', id).order('work_date').order('id')),
       fetchAll(() => supabase.from('estimates').select('id, number, total, status').eq('job_id', id).order('number')),
+      fetchAll(() => supabase.from('job_assignments').select('employee_id').eq('job_id', id).order('employee_id')),
     ]);
-    return { job, financials, payments, expenses, timeEntries, estimates };
+    return { job, financials, payments, expenses, timeEntries, estimates, assignments };
   },
   saveJob: (row) => save('jobs', JOB_FIELDS, row),
   deleteJob: (id) => remove('jobs', id),
@@ -158,4 +161,29 @@ export const supabaseApi = {
     unwrap(await supabase.from('job_financials').upsert(pick(row, FINANCIAL_FIELDS), { onConflict: 'job_id' }).select().single()),
   savePayment: (row) => save('job_payments', PAYMENT_FIELDS, row),
   deletePayment: (id) => remove('job_payments', id),
+
+  listEmployees: () => fetchAll(() => supabase.from('employees').select('*').order('full_name').order('id')),
+  saveEmployee: (row) => save('employees', EMPLOYEE_FIELDS, row),
+  deleteEmployee: (id) => remove('employees', id),
+  async employeeHasHours(id) {
+    const { count, error } = await supabase.from('time_entries').select('id', { count: 'exact', head: true }).eq('employee_id', id);
+    if (error) throw friendlyError(error);
+    return (count ?? 0) > 0;
+  },
+
+  listHours: ({ from, to }) =>
+    fetchAll(() =>
+      supabase.from('time_entries').select('*').gte('work_date', from).lte('work_date', to)
+        .order('work_date', { ascending: false }).order('created_at', { ascending: false }).order('id'),
+    ),
+  saveTimeEntry: (row) => save('time_entries', TIME_FIELDS, row),
+  deleteTimeEntry: (id) => remove('time_entries', id),
+  approveTimeEntries: async (ids) => unwrap(await supabase.from('time_entries').update({ status: 'approved' }).in('id', ids).select('id')).length,
+
+  listJobsBrief: () =>
+    fetchAll(() => supabase.from('jobs').select('id, title, status, scheduled_date, completed_date').order('created_at', { ascending: false }).order('id')),
+  assignEmployee: async (jobId, employeeId) =>
+    unwrap(await supabase.from('job_assignments').insert({ job_id: jobId, employee_id: employeeId }).select().single()),
+  unassignEmployee: async (jobId, employeeId) =>
+    unwrap(await supabase.from('job_assignments').delete().eq('job_id', jobId).eq('employee_id', employeeId)),
 };

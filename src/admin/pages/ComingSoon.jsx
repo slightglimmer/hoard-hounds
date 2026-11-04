@@ -2,12 +2,6 @@ import AdminIcon from '../components/AdminIcon.jsx';
 import { PageHeader } from '../components/ui.jsx';
 
 const PLANNED = {
-  '/employees': {
-    title: 'Employees',
-    icon: 'users',
-    phase: 'Phase 4',
-    points: ['Employee profiles and hourly rates', 'Job assignments and logged hours', 'Estimated gross wages (no payroll processing)'],
-  },
   '/reports': {
     title: 'Reports',
     icon: 'chart',

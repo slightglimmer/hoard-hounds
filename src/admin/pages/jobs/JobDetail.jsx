@@ -7,6 +7,8 @@ import { formatDate, todayISO } from '../../lib/dates.js';
 import { formatCents, formatMoney, parseAmount } from '../../lib/money.js';
 import { JOB_STATUSES, PAYMENT_KINDS, jobMoney, jobStatus } from '../../lib/jobs.js';
 import { CustomerFields, JobCostForm, PaymentForm, blankCustomer, customerPayload } from './JobForms.jsx';
+import { TimeEntryForm } from '../employees/EmployeeForms.jsx';
+import { TIME_STATUSES, wageCents } from '../../lib/employees.js';
 
 const NEW_CUSTOMER = '__new__';
 
@@ -42,6 +44,8 @@ export default function JobDetail({ id }) {
   const [data, setData] = useState(null); // { job, financials, payments, expenses, timeEntries, estimates }
   const [customers, setCustomers] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [jobsBrief, setJobsBrief] = useState([]);
   const [values, setValues] = useState(blankJob);
   const [newCustomer, setNewCustomer] = useState(blankCustomer);
   const [errors, setErrors] = useState({});
@@ -51,11 +55,17 @@ export default function JobDetail({ id }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [paymentForm, setPaymentForm] = useState(null); // null | 'new' | payment
   const [costForm, setCostForm] = useState(null); // null | 'new' | expense
+  const [hoursForm, setHoursForm] = useState(null); // null | 'new' | time entry
+  const [crewBusy, setCrewBusy] = useState(false);
 
   // keepEdits: refresh payments and costs without overwriting unsaved job details.
   async function load({ keepEdits = false } = {}) {
     try {
-      const [custs, cats, jobData] = await Promise.all([api.listCustomers(), api.listCategories(), isNew ? null : api.getJob(id)]);
+      const [custs, cats, jobData, emps, jobList] = await Promise.all([
+        api.listCustomers(), api.listCategories(), isNew ? null : api.getJob(id), api.listEmployees(), api.listJobsBrief(),
+      ]);
+      setEmployees(emps);
+      setJobsBrief(jobList);
       setCustomers(custs);
       setCategories(cats);
       if (jobData) {
@@ -187,8 +197,25 @@ export default function JobDetail({ id }) {
   const reload = () => {
     setPaymentForm(null);
     setCostForm(null);
+    setHoursForm(null);
     load({ keepEdits: true });
   };
+  const employeeName = new Map(employees.map((e) => [e.id, e.full_name]));
+  const assignedIds = (data.assignments ?? []).map((a) => a.employee_id);
+  const unassigned = employees.filter((e) => e.active && !assignedIds.includes(e.id));
+
+  async function changeCrew(employeeId, add) {
+    setCrewBusy(true);
+    try {
+      if (add) await api.assignEmployee(job.id, employeeId);
+      else await api.unassignEmployee(job.id, employeeId);
+      load({ keepEdits: true });
+    } catch (err) {
+      notify(err.message, 'error');
+    } finally {
+      setCrewBusy(false);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -358,22 +385,59 @@ export default function JobDetail({ id }) {
                 )}
               </section>
 
-              {/* Labor */}
+              {/* Crew & hours */}
               <section className="card animate-rise p-5 sm:p-6" style={{ animationDelay: '200ms' }} aria-labelledby="job-labor">
-                <h3 id="job-labor" className="font-display text-xl font-semibold">Crew labor (estimated)</h3>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 id="job-labor" className="font-display text-xl font-semibold">Crew &amp; hours</h3>
+                  <button type="button" className="btn-soft min-h-10" onClick={() => setHoursForm('new')}>
+                    <AdminIcon name="plus" className="h-4 w-4" />
+                    Log hours
+                  </button>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Crew on this job">
+                  {assignedIds.length === 0 && <span className="text-sm text-muted">No one assigned yet.</span>}
+                  {assignedIds.map((eid) => (
+                    <span key={eid} className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-blush py-1 pr-1 pl-3.5 text-sm font-semibold text-rose-ink">
+                      {employeeName.get(eid) ?? 'Crew member'}
+                      <button type="button" disabled={crewBusy} onClick={() => changeCrew(eid, false)} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-petal"
+                        aria-label={`Take ${employeeName.get(eid) ?? 'this person'} off this job`}>
+                        <AdminIcon name="x" className="h-3.5 w-3.5" strokeWidth={2.4} />
+                      </button>
+                    </span>
+                  ))}
+                  {unassigned.length > 0 && (
+                    <label className="inline-flex">
+                      <span className="sr-only">Add someone to this job</span>
+                      <select className="min-h-9 rounded-full border border-dashed border-rose/40 bg-white px-3 text-sm font-semibold text-rose-deep" value="" disabled={crewBusy}
+                        onChange={(e) => e.target.value && changeCrew(e.target.value, true)}>
+                        <option value="">＋ Add to crew…</option>
+                        {unassigned.map((e) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+                      </select>
+                    </label>
+                  )}
+                </div>
+
                 {data.timeEntries.length ? (
-                  <ul className="mt-3 divide-y divide-line text-sm">
+                  <ul className="mt-4 divide-y divide-line text-sm">
                     {data.timeEntries.map((t) => (
-                      <li key={t.id} className="flex items-center gap-3 py-2.5">
-                        <span className="w-24 shrink-0 text-muted tabular">{formatDate(t.work_date)}</span>
-                        <span className="flex-1">{Number(t.hours)} hours × {formatMoney(t.hourly_rate || 0)}</span>
-                        <span className="font-semibold tabular">{formatCents(Math.round(Number(t.hours) * Number(t.hourly_rate || 0) * 100))}</span>
+                      <li key={t.id}>
+                        <button type="button" onClick={() => setHoursForm(t)} className="flex w-full items-center gap-3 rounded-xl py-2.5 text-left hover:bg-blush/40">
+                          <span className="w-24 shrink-0 text-muted tabular">{formatDate(t.work_date)}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-semibold">{employeeName.get(t.employee_id) ?? 'Crew member'}</span>
+                            <span className="block text-muted">{Number(t.hours)} hrs × {formatMoney(t.hourly_rate || 0)}</span>
+                          </span>
+                          {t.status === 'submitted' && <span className={`pill ${TIME_STATUSES.submitted.className}`}>{TIME_STATUSES.submitted.label}</span>}
+                          {t.is_demo && <DemoPill />}
+                          <span className="font-semibold tabular">{formatCents(wageCents(t))}</span>
+                        </button>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-sm text-muted">
-                    Crew hours will show here once the <strong className="text-ink">Employees</strong> section is added (the next phase). Paid a helper a flat amount? Add it under Job costs as “Contract labor”.
+                  <p className="mt-3 text-sm text-muted">
+                    Log each person’s hours here to see your labor cost. Paid a helper a flat amount instead? Add it under Job costs as “Contract labor”.
                   </p>
                 )}
               </section>
@@ -438,6 +502,11 @@ export default function JobDetail({ id }) {
           <JobCostForm
             open={costForm !== null} jobId={job.id} defaultDate={values.completed_date || (values.scheduled_date && values.scheduled_date <= todayISO() ? values.scheduled_date : todayISO())} expense={costForm === 'new' ? null : costForm}
             categories={categories} onClose={() => setCostForm(null)} onSaved={reload}
+          />
+          <TimeEntryForm
+            open={hoursForm !== null} entry={hoursForm === 'new' ? null : hoursForm} employees={employees} jobs={jobsBrief} defaultJobId={job.id}
+            defaultDate={values.completed_date || (values.scheduled_date && values.scheduled_date <= todayISO() ? values.scheduled_date : todayISO())}
+            onClose={() => setHoursForm(null)} onSaved={reload}
           />
         </>
       )}

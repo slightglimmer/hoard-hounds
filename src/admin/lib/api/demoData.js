@@ -53,6 +53,26 @@ export function buildDemoData(today = new Date()) {
   }));
   const cat = (name) => categories.find((c) => c.name === name).id;
 
+  // Sample crew. Rates are made up for the demo.
+  const employees = [
+    ['Sample Crew Lead Jordan', 22, 'Drives the truck; leads estate jobs'],
+    ['Sample Crew Member Avery', 18.5, null],
+    ['Sample Crew Member Sam', 17, 'Weekends only'],
+  ].map(([full_name, rate, notes], i) => ({
+    id: newId(), user_id: null, full_name, email: null, phone: null, hourly_rate: rate.toFixed(2), active: true,
+    hired_on: toISODate(new Date(today.getFullYear() - 1, 2 + i * 3, 1)), notes, is_demo: true,
+  }));
+  const assignments = [];
+  const thisWeekStart = toISODate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - ((today.getDay() + 6) % 7)));
+  const logHours = (job, employee, date, hours) => {
+    timeEntries.push({
+      id: newId(), employee_id: employee.id, job_id: job.id, work_date: date, hours: hours.toFixed(2), hourly_rate: employee.hourly_rate,
+      // This week's hours are still waiting for approval; older ones are approved.
+      status: date >= thisWeekStart ? 'submitted' : 'approved', notes: null, is_demo: true, created_at: stamp,
+    });
+    if (!assignments.some((a) => a.job_id === job.id && a.employee_id === employee.id)) assignments.push({ job_id: job.id, employee_id: employee.id, is_demo: true });
+  };
+
   const expenses = [];
   const payments = [];
   const timeEntries = [];
@@ -124,8 +144,8 @@ export function buildDemoData(today = new Date()) {
       }
       add(d, 'Sample Landfill', 'Disposal fee', 'Dump & disposal fees', between(65, 210), 'card', job.id);
       if (rand() > 0.35) add(d, 'Sample Truck Rental', 'Box truck, 1 day', 'Truck rental', between(110, 160), 'card', job.id);
-      timeEntries.push({ id: newId(), job_id: job.id, work_date: d, hours: between(4, 8).toFixed(2), hourly_rate: '20.00', is_demo: true });
-      if (price > 800) timeEntries.push({ id: newId(), job_id: job.id, work_date: d, hours: between(4, 7).toFixed(2), hourly_rate: '18.50', is_demo: true });
+      logHours(job, employees[0], d, between(4, 8));
+      if (price > 800) logHours(job, employees[1 + (jobCount % 2)], d, between(4, 7));
     }
 
     add(day(4), 'Sample Gas Station', 'Fuel', 'Fuel', between(90, 180));
@@ -201,6 +221,10 @@ export function buildDemoData(today = new Date()) {
   financials.push({ job_id: current.id, quoted_amount: '875.00', agreed_price: '875.00', admin_notes: null, is_demo: true });
   payments.push({ id: newId(), job_id: current.id, received_on: todayStr, kind: 'deposit', amount: '150.00', method: 'card', notes: null, is_demo: true });
   add(todayStr, 'Sample Truck Rental', 'Box truck, 1 day', 'Truck rental', 139, 'card', current.id);
+  logHours(current, employees[0], todayStr, 5.5);
+  logHours(current, employees[1], todayStr, 5);
+  // Crew already lined up for upcoming work.
+  for (const job of jobs.filter((j) => j.status === 'scheduled')) assignments.push({ job_id: job.id, employee_id: employees[0].id, is_demo: true });
 
-  return { categories, expenses, recurring, payments, timeEntries, priceItems, estimates, customers, jobs, financials };
+  return { categories, expenses, recurring, payments, timeEntries, priceItems, estimates, customers, jobs, financials, employees, assignments };
 }

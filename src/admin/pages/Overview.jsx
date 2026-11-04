@@ -91,7 +91,7 @@ export default function Overview() {
               goodWhenUp={false} accent="bg-petal/70 text-rose-ink" delay={60} />
             <StatCard label="Labor (estimated)" icon="users" cents={view.now.labor} deltaPct={change(view.nowSoFar.labor, view.before.labor)}
               goodWhenUp={false} accent="bg-gold/20 text-gold-deep" delay={120}
-              note={view.hasLabor ? 'Hours × hourly rate, before taxes' : 'Comes from logged hours (Employees, coming soon)'} />
+              note={view.hasLabor ? 'Hours × hourly rate, before taxes' : 'Log crew hours under Employees'} />
             <StatCard label="Net profit" icon="chart" cents={view.now.profit} deltaPct={change(view.nowSoFar.profit, view.before.profit)}
               accent="bg-rose-deep text-white" delay={180} emphasis />
           </section>

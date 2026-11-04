@@ -173,6 +173,7 @@ export const demoApi = {
       expenses: store.expenses.filter((e) => e.job_id === id).sort((a, b) => (a.expense_date < b.expense_date ? -1 : 1)),
       timeEntries: store.timeEntries.filter((t) => t.job_id === id),
       estimates: store.estimates.filter((e) => e.job_id === id).map(({ id: eid, number, total, status }) => ({ id: eid, number, total, status })),
+      assignments: store.assignments.filter((a) => a.job_id === id).map((a) => ({ employee_id: a.employee_id })),
     });
   },
   async saveJob(row) {
@@ -186,6 +187,7 @@ export const demoApi = {
     store.jobs = store.jobs.filter((j) => j.id !== id);
     store.financials = store.financials.filter((f) => f.job_id !== id);
     store.payments = store.payments.filter((p) => p.job_id !== id);
+    store.assignments = store.assignments.filter((a) => a.job_id !== id);
     for (const list of [store.expenses, store.timeEntries, store.estimates]) for (const r of list) if (r.job_id === id) r.job_id = null;
   },
   async saveJobFinancials(row) {
@@ -202,6 +204,64 @@ export const demoApi = {
   async deletePayment(id) {
     await wait();
     store.payments = store.payments.filter((p) => p.id !== id);
+  },
+
+  async listEmployees() {
+    await wait();
+    return copy([...store.employees].sort((a, b) => a.full_name.localeCompare(b.full_name)));
+  },
+  async saveEmployee(row) {
+    await wait();
+    return copy(upsert(store.employees, row, { active: true }));
+  },
+  async deleteEmployee(id) {
+    await wait();
+    // Same as the database: an employee with logged hours can't be deleted.
+    if (store.timeEntries.some((t) => t.employee_id === id)) throw new Error('This item is still in use by other records, so it can’t be deleted.');
+    store.employees = store.employees.filter((e) => e.id !== id);
+    store.assignments = store.assignments.filter((a) => a.employee_id !== id);
+  },
+  async employeeHasHours(id) {
+    await wait();
+    return store.timeEntries.some((t) => t.employee_id === id);
+  },
+
+  async listHours(range) {
+    await wait();
+    return copy(store.timeEntries.filter((t) => inRange(t.work_date, range)).sort((a, b) => (a.work_date < b.work_date ? 1 : -1)));
+  },
+  async saveTimeEntry(row) {
+    await wait();
+    // Same as the database trigger: no rate given means the employee's current rate.
+    const filled = { ...row };
+    if (filled.hourly_rate === null || filled.hourly_rate === undefined || filled.hourly_rate === '') {
+      filled.hourly_rate = store.employees.find((e) => e.id === filled.employee_id)?.hourly_rate ?? null;
+    }
+    return copy(upsert(store.timeEntries, filled, { status: 'approved' }));
+  },
+  async deleteTimeEntry(id) {
+    await wait();
+    store.timeEntries = store.timeEntries.filter((t) => t.id !== id);
+  },
+  async approveTimeEntries(ids) {
+    await wait();
+    let n = 0;
+    for (const t of store.timeEntries) if (ids.includes(t.id) && t.status !== 'approved') { t.status = 'approved'; n += 1; }
+    return n;
+  },
+
+  async listJobsBrief() {
+    await wait();
+    return copy(store.jobs.map(({ id, title, status, scheduled_date, completed_date }) => ({ id, title, status, scheduled_date, completed_date })));
+  },
+  async assignEmployee(jobId, employeeId) {
+    await wait();
+    if (store.assignments.some((a) => a.job_id === jobId && a.employee_id === employeeId)) throw new Error('That would create a duplicate.');
+    store.assignments.push({ job_id: jobId, employee_id: employeeId, is_demo: true });
+  },
+  async unassignEmployee(jobId, employeeId) {
+    await wait();
+    store.assignments = store.assignments.filter((a) => !(a.job_id === jobId && a.employee_id === employeeId));
   },
 
   async hasDemoData() {

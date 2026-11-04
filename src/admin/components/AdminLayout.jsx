@@ -12,7 +12,7 @@ export const NAV = [
   { path: '/expenses', label: 'Expenses', icon: 'receipt' },
   { path: '/price-sheet', label: 'Price Sheet', icon: 'tag' },
   { path: '/jobs', label: 'Jobs', icon: 'truck' },
-  { path: '/employees', label: 'Employees', icon: 'users', soon: true },
+  { path: '/employees', label: 'Employees', icon: 'users' },
   { path: '/reports', label: 'Reports', icon: 'chart', soon: true },
 ];
 
