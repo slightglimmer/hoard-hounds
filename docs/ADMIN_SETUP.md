@@ -63,6 +63,18 @@ and it will walk you through connecting an authenticator app on your phone.
 
 ---
 
+## Updates (run each one once)
+
+Some new dashboard features need a small addition to your database. Claude will tell you when.
+
+- **Price Sheet & Estimates (Phase 2):** in Supabase, open **SQL Editor**, paste everything from
+  **supabase/migrations/20261105000003_estimates.sql**, and click **Run**. It should say
+  **"All done! Estimates are set up."**
+
+(Setting up from scratch? `supabase/setup_everything.sql` already includes every update.)
+
+---
+
 ## Later, if you need them
 
 **Lost your phone or authenticator app?** In Supabase, open **SQL Editor**, paste this and click **Run**.

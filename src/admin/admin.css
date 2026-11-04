@@ -107,6 +107,22 @@
   @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap;
 }
 
+/* Printing an estimate: only the customer-facing document prints, on plain white. */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  body {
+    background: #fff !important;
+  }
+  #root {
+    display: none !important;
+  }
+  .print-doc {
+    display: block !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

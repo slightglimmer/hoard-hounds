@@ -2,12 +2,6 @@ import AdminIcon from '../components/AdminIcon.jsx';
 import { PageHeader } from '../components/ui.jsx';
 
 const PLANNED = {
-  '/price-sheet': {
-    title: 'Price Sheet',
-    icon: 'tag',
-    phase: 'Phase 3',
-    points: ['Your services and prices: flat, per load, per item or hourly', 'Minimum charges', 'An estimate calculator for customer quotes'],
-  },
   '/jobs': {
     title: 'Jobs',
     icon: 'truck',

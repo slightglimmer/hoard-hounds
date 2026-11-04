@@ -3,6 +3,7 @@
 
 import { toISODate } from '../dates.js';
 import { recurrenceDate } from '../recurrence.js';
+import { computeTotals } from '../estimate.js';
 
 // Same starting categories as the database migration.
 const CATEGORY_SEED = [
@@ -118,5 +119,36 @@ export function buildDemoData(today = new Date()) {
   });
 
   expenses.sort((a, b) => (a.expense_date < b.expense_date ? 1 : -1));
-  return { categories, expenses, recurring, payments, timeEntries };
+  // Sample price sheet: made-up prices for the demo, not Hoard Hounds' real rates.
+  const priceItems = [
+    ['Single item pickup', 'One bulky item, like a couch, mattress or appliance', 'item', 95, 95],
+    ['Quarter truck load', 'About 3–4 cubic yards', 'flat', 225, null],
+    ['Half truck load', 'About 7–8 cubic yards', 'flat', 395, null],
+    ['Full truck load', 'About 15 cubic yards', 'load', 650, null],
+    ['Extra labor', 'Sorting, bagging and carrying, per crew member', 'hour', 45, null],
+    ['Stairs or long carry', 'Added when items come from upper floors or far from the truck', 'flat', 50, null],
+  ].map(([name, description, unit, price, min], i) => ({
+    id: newId(), name, description, unit, unit_price: price.toFixed(2), minimum_charge: min === null ? null : min.toFixed(2),
+    active: true, sort_order: (i + 1) * 10, is_demo: true,
+  }));
+
+  const line = (p, quantity) => ({
+    price_item_id: p.id, name: p.name, description: p.description, unit: p.unit, unit_price: p.unit_price,
+    minimum_charge: p.minimum_charge, quantity: String(quantity),
+  });
+  const daysAgo = (n) => toISODate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - n));
+  const estimates = [
+    { number: 1001, customer_name: 'Sample Customer A', property_address: '123 Sample St, Redford, MI', status: 'accepted', estimate_date: daysAgo(12),
+      line_items: [line(priceItems[3], 1), line(priceItems[4], 2)], discount_type: null, discount_value: null, deposit_amount: '150.00' },
+    { number: 1002, customer_name: 'Sample Customer B', property_address: '456 Example Ave, Livonia, MI', status: 'sent', estimate_date: daysAgo(3),
+      line_items: [line(priceItems[2], 1), line(priceItems[5], 1)], discount_type: 'percent', discount_value: '10.00', deposit_amount: null },
+  ].map((e) => {
+    const t = computeTotals(e.line_items, e.discount_type, e.discount_value);
+    return {
+      id: newId(), customer_email: null, customer_phone: null, valid_until: null, notes: null, terms: null, is_demo: true, ...e,
+      subtotal: (t.subtotal / 100).toFixed(2), discount_total: (t.discount / 100).toFixed(2), total: (t.total / 100).toFixed(2),
+    };
+  });
+
+  return { categories, expenses, recurring, payments, timeEntries, priceItems, estimates };
 }

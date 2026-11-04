@@ -6,12 +6,14 @@ import { MODE } from './lib/supabase.js';
 import Overview from './pages/Overview.jsx';
 import ComingSoon, { COMING_SOON_ROUTES } from './pages/ComingSoon.jsx';
 import ExpensesPage from './pages/expenses/ExpensesPage.jsx';
+import PriceSheetPage from './pages/price-sheet/PriceSheetPage.jsx';
 import {
   AuthError, Forbidden, Loading, MfaEnroll, MfaVerify, NotConfigured, SetNewPassword, SignIn, UnsafeKey,
 } from './pages/auth/AuthScreens.jsx';
 
 function Page({ route }) {
   if (route.startsWith('/expenses')) return <ExpensesPage route={route} />;
+  if (route.startsWith('/price-sheet')) return <PriceSheetPage route={route} />;
   if (COMING_SOON_ROUTES.includes(route)) return <ComingSoon route={route} />;
   return <Overview />;
 }

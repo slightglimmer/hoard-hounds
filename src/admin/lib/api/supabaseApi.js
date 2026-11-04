@@ -38,6 +38,12 @@ const pick = (obj, fields) => Object.fromEntries(fields.filter((f) => f in obj).
 const EXPENSE_FIELDS = ['expense_date', 'vendor', 'description', 'category_id', 'amount', 'payment_method', 'notes'];
 const RECURRING_FIELDS = ['vendor', 'description', 'category_id', 'amount', 'payment_method', 'frequency', 'start_date', 'end_date', 'active', 'notes'];
 const CATEGORY_FIELDS = ['name', 'tax_category', 'active', 'sort_order'];
+const PRICE_FIELDS = ['name', 'description', 'unit', 'unit_price', 'minimum_charge', 'active', 'sort_order'];
+// Totals are left out on purpose: the database calculates them.
+const ESTIMATE_FIELDS = [
+  'customer_name', 'customer_email', 'customer_phone', 'property_address', 'status', 'estimate_date', 'valid_until',
+  'line_items', 'discount_type', 'discount_value', 'deposit_amount', 'notes', 'terms',
+];
 
 async function save(table, fields, row) {
   const values = pick(row, fields);
@@ -86,7 +92,7 @@ export const supabaseApi = {
     ),
 
   async hasDemoData() {
-    const tables = ['expenses', 'recurring_expenses', 'jobs', 'employees', 'customers', 'price_items'];
+    const tables = ['expenses', 'recurring_expenses', 'jobs', 'employees', 'customers', 'price_items', 'estimates'];
     const counts = await Promise.all(
       tables.map(async (t) => {
         // A head request returns no rows, only the count.
@@ -98,4 +104,20 @@ export const supabaseApi = {
     return counts.some((n) => n > 0);
   },
   clearDemoData: async () => unwrap(await supabase.rpc('clear_demo_data')),
+
+  listPriceItems: () =>
+    fetchAll(() => supabase.from('price_items').select('*').order('sort_order').order('name').order('id')),
+  savePriceItem: (row) => save('price_items', PRICE_FIELDS, row),
+  deletePriceItem: (id) => remove('price_items', id),
+
+  listEstimates: () =>
+    fetchAll(() =>
+      supabase
+        .from('estimates')
+        .select('id, number, customer_name, property_address, status, estimate_date, valid_until, total, is_demo')
+        .order('number', { ascending: false }),
+    ),
+  getEstimate: async (id) => unwrap(await supabase.from('estimates').select('*').eq('id', id).single()),
+  saveEstimate: (row) => save('estimates', ESTIMATE_FIELDS, row),
+  deleteEstimate: (id) => remove('estimates', id),
 };

@@ -4,6 +4,7 @@
 
 import { buildDemoData, newId } from './demoData.js';
 import { recurrenceDate, dueDates } from '../recurrence.js';
+import { computeTotals } from '../estimate.js';
 
 const store = buildDemoData();
 const wait = (ms = 180) => new Promise((r) => setTimeout(r, ms));
@@ -96,6 +97,44 @@ export const demoApi = {
   async listTimeEntries(range) {
     await wait();
     return copy(store.timeEntries.filter((t) => inRange(t.work_date, range)));
+  },
+
+  async listPriceItems() {
+    await wait();
+    return copy([...store.priceItems].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name)));
+  },
+  async savePriceItem(row) {
+    await wait();
+    const max = Math.max(0, ...store.priceItems.map((p) => p.sort_order));
+    return copy(upsert(store.priceItems, row, { active: true, sort_order: max + 10 }));
+  },
+  async deletePriceItem(id) {
+    await wait();
+    store.priceItems = store.priceItems.filter((p) => p.id !== id);
+  },
+
+  async listEstimates() {
+    await wait();
+    return copy([...store.estimates].sort((a, b) => b.number - a.number));
+  },
+  async getEstimate(id) {
+    await wait();
+    const found = store.estimates.find((e) => e.id === id);
+    if (!found) throw new Error('That estimate no longer exists.');
+    return copy(found);
+  },
+  async saveEstimate(row) {
+    await wait();
+    const isNew = !row.id;
+    const saved = upsert(store.estimates, row, isNew ? { number: Math.max(1000, ...store.estimates.map((e) => e.number)) + 1 } : {});
+    // Same as the database trigger: totals are always recalculated.
+    const t = computeTotals(saved.line_items, saved.discount_type, saved.discount_value);
+    Object.assign(saved, { subtotal: (t.subtotal / 100).toFixed(2), discount_total: (t.discount / 100).toFixed(2), total: (t.total / 100).toFixed(2) });
+    return copy(saved);
+  },
+  async deleteEstimate(id) {
+    await wait();
+    store.estimates = store.estimates.filter((e) => e.id !== id);
   },
 
   async hasDemoData() {

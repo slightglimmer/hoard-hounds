@@ -10,7 +10,7 @@ import { MODE } from '../lib/supabase.js';
 export const NAV = [
   { path: '/overview', label: 'Overview', icon: 'overview' },
   { path: '/expenses', label: 'Expenses', icon: 'receipt' },
-  { path: '/price-sheet', label: 'Price Sheet', icon: 'tag', soon: true },
+  { path: '/price-sheet', label: 'Price Sheet', icon: 'tag' },
   { path: '/jobs', label: 'Jobs', icon: 'truck', soon: true },
   { path: '/employees', label: 'Employees', icon: 'users', soon: true },
   { path: '/reports', label: 'Reports', icon: 'chart', soon: true },

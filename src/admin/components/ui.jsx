@@ -13,7 +13,7 @@ export function Field({ label, error, hint, optional, children, className = '' }
     <div className={className}>
       <label htmlFor={id} className="label">
         {label}
-        {optional && <span className="ml-1.5 font-normal text-muted">(optional)</span>}
+        {optional && <span className="ml-1 font-normal text-muted"> (optional)</span>}
       </label>
       {children({ id, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy })}
       {hint && !error && (
