@@ -70,7 +70,8 @@ Some new dashboard features need a small addition to your database. Claude will 
 - **Price Sheet & Estimates (Phase 2):** in Supabase, open **SQL Editor**, paste everything from
   **supabase/migrations/20261105000003_estimates.sql**, and click **Run**. It should say
   **"All done! Estimates are set up."**
-- **Online payments:** see "Online payments: cards and Klarna (Stripe)" above.
+- **Online payments:** see "Online payments: cards and Klarna (Stripe)" below.
+- **Quote links:** see "Quote links: customers accept and pay online" below.
 
 (Setting up from scratch? `supabase/setup_everything.sql` already includes every update.)
 
@@ -116,6 +117,34 @@ the amount fits their limits.
 
 ---
 
+## Quote links: customers accept and pay online
+
+Send a customer a private link to their quote. They open it on their phone, see every line and the
+total, and pick one: **pay the deposit**, **pay in full** (card, or over time with Klarna), or
+**accept now and pay later**. Accepting creates the job and customer for you, and payments are
+recorded on the job automatically.
+
+Do the online payments steps above first. Then, once:
+
+1. **Database update:** Supabase → **SQL Editor** → paste everything from
+   **supabase/migrations/20261105000005_quote_links.sql** → **Run**. It should say
+   *"All done! Quote links are set up."*
+2. **Add one more server function:** Supabase → **Edge Functions** → **Deploy a new function** →
+   **Via editor**. Name it `public-quote`, paste everything from
+   **supabase/functions/public-quote/index.ts**, and deploy. Then open its settings and turn **off**
+   "Verify JWT". (Customers don't have accounts. The function only shows the one quote whose secret
+   link it's given.)
+3. **Update the payment webhook function:** open `stripe-webhook` in Supabase, replace its code with
+   the latest **supabase/functions/stripe-webhook/index.ts**, and deploy again.
+
+**Using it:** Price Sheet → Estimates → open an estimate → **Create quote link** → **Text it** or
+**Email it**. Tap **Quote template** on the Estimates page to change the welcome message, fine print,
+how many days quotes are good for, and your usual deposit.
+
+To see what customers see without a real quote, open **hoardhounds.com/quote/#demo**.
+
+---
+
 ## Later, if you need them
 
 **Lost your phone or authenticator app?** In Supabase, open **SQL Editor**, paste this and click **Run**.
@@ -138,7 +167,11 @@ Expenses → This year → Export CSV.
 
 ## Technical notes (for developers)
 
-- `supabase/setup_everything.sql` is the two files in `supabase/migrations/` combined, plus a line
+- Quote links: each shared estimate has a random 256-bit `share_token`, used only in the URL fragment
+  (`/quote/#token`), so it isn't sent in requests or referrers. The `public-quote` function reads and
+  accepts quotes only through `get_shared_estimate` / `accept_shared_estimate`, which only the
+  service role can run. Payment amounts are computed on the server from the database.
+- `supabase/setup_everything.sql` is the files in `supabase/migrations/` combined, plus a line
   that makes johnice.edward@gmail.com an admin. The migrations also work with the Supabase CLI
   (`supabase link`, then `supabase db push`).
 - Every table uses row-level security. Admin access requires the `admin` role **and** two-step

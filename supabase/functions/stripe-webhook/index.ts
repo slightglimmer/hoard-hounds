@@ -85,7 +85,7 @@ export async function handle(req, env, fetchImpl = fetch) {
       [request] = await db(env, fetchImpl, `/payment_requests?stripe_payment_link_id=eq.${encodeURIComponent(session.payment_link)}&select=id,job_id,kind`);
     }
     let methodType = 'card';
-    let piMeta = {};
+    let piMeta = session.metadata || {};
     if (session.payment_intent) {
       const res = await fetchImpl(`${STRIPE_API}/payment_intents/${session.payment_intent}?expand[]=payment_method`, {
         headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` },
@@ -93,7 +93,7 @@ export async function handle(req, env, fetchImpl = fetch) {
       if (res.ok) {
         const pi = await res.json();
         methodType = pi.payment_method?.type || methodType;
-        piMeta = pi.metadata || {};
+        piMeta = { ...piMeta, ...(pi.metadata || {}) };
       }
     }
     const jobId = request?.job_id || piMeta.job_id;

@@ -9,6 +9,7 @@ import { STATUSES, statusInfo } from '../../lib/estimate.js';
 import { useQuery } from '../../lib/useQuery.js';
 import EstimateEditor from './EstimateEditor.jsx';
 import PricesPanel from './PricesPanel.jsx';
+import QuoteTemplate from './QuoteTemplate.jsx';
 
 const TABS = [
   { value: '/price-sheet', label: 'Prices' },
@@ -17,6 +18,7 @@ const TABS = [
 
 function EstimatesList() {
   const [status, setStatus] = useState('all');
+  const [templateOpen, setTemplateOpen] = useState(false);
   const { data, error, loading, reload } = useQuery(() => api.listEstimates(), []);
   const shown = useMemo(() => (data ?? []).filter((e) => status === 'all' || e.status === status), [data, status]);
   const year = todayISO().slice(0, 4);
@@ -37,12 +39,14 @@ function EstimatesList() {
             <span className="font-display text-xl font-semibold text-ink tabular">{formatCents(sumCents(acceptedThisYear, (e) => e.total))}</span> accepted in {year}
             {openCount > 0 && <> · {openCount} waiting on a reply</>}
           </p>
+          <button type="button" className="btn-ghost" onClick={() => setTemplateOpen(true)}>Quote template</button>
           <a href="#/price-sheet/estimates/new" className="btn-primary">
             <AdminIcon name="plus" className="h-4 w-4" strokeWidth={2.4} />
             New estimate
           </a>
         </div>
       </div>
+      <QuoteTemplate open={templateOpen} onClose={() => setTemplateOpen(false)} />
 
       <ErrorNote error={error} onRetry={reload} />
 

@@ -130,7 +130,9 @@ export const demoApi = {
   async saveEstimate(row) {
     await wait();
     const isNew = !row.id;
-    const saved = upsert(store.estimates, row, isNew ? { number: Math.max(1000, ...store.estimates.map((e) => e.number)) + 1 } : {});
+    const saved = upsert(store.estimates, row, isNew
+      ? { number: Math.max(1000, ...store.estimates.map((e) => e.number)) + 1, customer_id: null, job_id: null, share_token: null, accepted_at: null, accepted_via: null }
+      : {});
     // Same as the database trigger: totals are always recalculated.
     const t = computeTotals(saved.line_items, saved.discount_type, saved.discount_value);
     Object.assign(saved, { subtotal: (t.subtotal / 100).toFixed(2), discount_total: (t.discount / 100).toFixed(2), total: (t.total / 100).toFixed(2) });
@@ -284,6 +286,43 @@ export const demoApi = {
     };
     store.payments.push(payment);
     Object.assign(r, { status: 'paid', job_payment_id: payment.id });
+  },
+
+  async getQuoteSettings() {
+    await wait();
+    return copy(store.settings);
+  },
+  async saveQuoteSettings(row) {
+    await wait();
+    const { quote_message, default_terms, default_valid_days, default_deposit } = row;
+    Object.assign(store.settings, { quote_message, default_terms, default_valid_days, default_deposit });
+    return copy(store.settings);
+  },
+  // Demo only: pretends the customer opened the quote link and accepted it,
+  // the way the database's accept_shared_estimate() and the Stripe webhook do.
+  async simulateQuoteAcceptance(id, option) {
+    await wait(400);
+    const e = store.estimates.find((x) => x.id === id);
+    if (!e) return;
+    if (!e.job_id) {
+      let customerId = e.customer_id;
+      if (!customerId) {
+        customerId = newId();
+        store.customers.push({ id: customerId, full_name: e.customer_name, company: null, customer_type: null, email: e.customer_email, phone: e.customer_phone,
+          notes: `Added when they accepted quote #${e.number} online`, is_demo: true, created_at: new Date().toISOString() });
+      }
+      const jobId = newId();
+      store.jobs.push({ id: jobId, customer_id: customerId, title: `${e.customer_name} cleanout`, property_address: e.property_address, service_type: null,
+        status: 'scheduled', scheduled_date: null, completed_date: null, crew_notes: e.notes, is_demo: true, created_at: new Date().toISOString() });
+      store.financials.push({ job_id: jobId, quoted_amount: e.total, agreed_price: e.total, admin_notes: `Accepted online, quote #${e.number}`, is_demo: true });
+      Object.assign(e, { job_id: jobId, customer_id: customerId });
+    }
+    Object.assign(e, { status: 'accepted', accepted_at: e.accepted_at || new Date().toISOString(), accepted_via: e.accepted_via || option });
+    if (option !== 'later') {
+      const amount = option === 'deposit' ? Math.min(Number(e.deposit_amount || 0), Number(e.total)) : Number(e.total);
+      store.payments.push({ id: newId(), job_id: e.job_id, received_on: new Date().toLocaleDateString('en-CA'), kind: option === 'deposit' ? 'deposit' : 'payment',
+        amount: amount.toFixed(2), method: 'other', notes: 'Paid online with Klarna through Stripe (demo)', is_demo: true, created_at: new Date().toISOString() });
+    }
   },
 
   async listJobsBrief() {

@@ -42,8 +42,10 @@ const PRICE_FIELDS = ['name', 'description', 'unit', 'unit_price', 'minimum_char
 // Totals are left out on purpose: the database calculates them.
 const ESTIMATE_FIELDS = [
   'customer_name', 'customer_email', 'customer_phone', 'property_address', 'status', 'estimate_date', 'valid_until',
-  'line_items', 'discount_type', 'discount_value', 'deposit_amount', 'notes', 'terms', 'customer_id', 'job_id',
+  'line_items', 'discount_type', 'discount_value', 'deposit_amount', 'notes', 'terms', 'customer_id', 'job_id', 'share_token',
 ];
+const SETTINGS_FIELDS = ['quote_message', 'default_terms', 'default_valid_days', 'default_deposit'];
+const NOT_SET_UP = ['42P01', 'PGRST205', '42703', 'PGRST204'];
 const CUSTOMER_FIELDS = ['full_name', 'company', 'customer_type', 'email', 'phone', 'notes'];
 const JOB_FIELDS = ['customer_id', 'title', 'property_address', 'service_type', 'status', 'scheduled_date', 'completed_date', 'crew_notes'];
 const FINANCIAL_FIELDS = ['job_id', 'quoted_amount', 'agreed_price', 'admin_notes'];
@@ -203,13 +205,25 @@ export const supabaseApi = {
   async listPaymentRequests(jobId) {
     const { data, error } = await supabase.from('payment_requests').select('*').eq('job_id', jobId).order('created_at', { ascending: false });
     if (error) {
-      if (['42P01', 'PGRST205'].includes(error.code)) return null;
+      if (NOT_SET_UP.includes(error.code)) return null;
       throw friendlyError(error);
     }
     return data;
   },
   requestPayment: (fields) => callPayments({ action: 'create', ...fields }).then((d) => d.request),
   cancelPaymentRequest: (id) => callPayments({ action: 'cancel', request_id: id }),
+
+  // Quote template (business_settings). Returns null if the quote-links update hasn't been run yet.
+  async getQuoteSettings() {
+    const { data, error } = await supabase.from('business_settings').select('*').eq('id', 1).maybeSingle();
+    if (error) {
+      if (NOT_SET_UP.includes(error.code)) return null;
+      throw friendlyError(error);
+    }
+    return data;
+  },
+  saveQuoteSettings: async (row) =>
+    unwrap(await supabase.from('business_settings').upsert({ id: 1, ...pick(row, SETTINGS_FIELDS) }).select().single()),
 
   unassignEmployee: async (jobId, employeeId) =>
     unwrap(await supabase.from('job_assignments').delete().eq('job_id', jobId).eq('employee_id', employeeId)),

@@ -208,7 +208,8 @@ export function buildDemoData(today = new Date()) {
   ].map((e) => {
     const t = computeTotals(e.line_items, e.discount_type, e.discount_value);
     return {
-      id: newId(), customer_email: null, customer_phone: null, valid_until: null, notes: null, terms: null, is_demo: true, ...e,
+      id: newId(), customer_email: null, customer_phone: null, valid_until: null, notes: null, terms: null, customer_id: null, job_id: null,
+      share_token: null, accepted_at: null, accepted_via: null, is_demo: true, ...e,
       subtotal: (t.subtotal / 100).toFixed(2), discount_total: (t.discount / 100).toFixed(2), total: (t.total / 100).toFixed(2),
     };
   });
@@ -226,5 +227,13 @@ export function buildDemoData(today = new Date()) {
   // Crew already lined up for upcoming work.
   for (const job of jobs.filter((j) => j.status === 'scheduled')) assignments.push({ job_id: job.id, employee_id: employees[0].id, is_demo: true });
 
-  return { categories, expenses, recurring, payments, timeEntries, priceItems, estimates, customers, jobs, financials, employees, assignments, paymentRequests: [] };
+  return { categories, expenses, recurring, payments, timeEntries, priceItems, estimates, customers, jobs, financials, employees, assignments, paymentRequests: [],
+    settings: {
+      id: 1,
+      quote_message: 'Thanks for considering Hoard Hounds! Here’s your quote. When you’re ready, accept below to book your cleanout.',
+      default_terms: 'This estimate is based on the photos and details provided. The final price is confirmed with you after a walkthrough or on arrival, before any work begins.',
+      default_valid_days: 30,
+      default_deposit: null,
+    },
+  };
 }

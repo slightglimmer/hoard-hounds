@@ -3,7 +3,7 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-// Adds a Content-Security-Policy to the built admin page: scripts only from this
+// Adds a Content-Security-Policy to the built admin and quote pages: scripts only from this
 // site, and network requests only to this site and the Supabase project.
 // (Build only: the dev server injects its own scripts for hot reloading.)
 function adminCsp(env) {
@@ -25,7 +25,7 @@ function adminCsp(env) {
     transformIndexHtml: {
       order: 'post',
       handler(html, ctx) {
-        if (!ctx.path.startsWith('/admin/')) return html;
+        if (!ctx.path.startsWith('/admin/') && !ctx.path.startsWith('/quote/')) return html;
         return html.replace('<meta charset="UTF-8" />', `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${policy}" />`);
       },
     },
@@ -44,6 +44,7 @@ export default defineConfig(({ isSsrBuild, mode }) => {
               main: resolve(import.meta.dirname, 'index.html'),
               privacy: resolve(import.meta.dirname, 'privacy.html'),
               admin: resolve(import.meta.dirname, 'admin/index.html'),
+              quote: resolve(import.meta.dirname, 'quote/index.html'),
             },
           },
         },

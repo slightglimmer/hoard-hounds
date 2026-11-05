@@ -8,6 +8,7 @@ import { formatCents } from '../../lib/money.js';
 import { DEFAULT_TERMS, STATUSES, UNITS, computeTotals, estimateText, lineCents, minimumApplies, unitPer } from '../../lib/estimate.js';
 import EstimateDocument from './EstimateDocument.jsx';
 import { priceLabel } from './PricesPanel.jsx';
+import QuoteLink from './QuoteLink.jsx';
 
 let keySeq = 0;
 const newKey = () => `line-${++keySeq}`;
@@ -82,9 +83,22 @@ export default function EstimateEditor({ id }) {
     let cancelled = false;
     (async () => {
       try {
-        const [items, row] = await Promise.all([api.listPriceItems(), isNew ? null : api.getEstimate(id)]);
+        const [items, row, settings] = await Promise.all([
+          api.listPriceItems(),
+          isNew ? null : api.getEstimate(id),
+          isNew ? api.getQuoteSettings().catch(() => null) : null,
+        ]);
         if (cancelled) return;
         setPrices(items);
+        // New estimates start from your quote template (Estimates → Quote template).
+        if (settings) {
+          setEst((e) => ({
+            ...e,
+            terms: settings.default_terms ?? e.terms,
+            valid_until: plusDays(e.estimate_date, settings.default_valid_days || 30),
+            deposit_amount: settings.default_deposit ? String(Number(settings.default_deposit)) : '',
+          }));
+        }
         if (row) {
           setSaved(row);
           setEst({
@@ -487,6 +501,16 @@ export default function EstimateEditor({ id }) {
               </button>
             )}
           </div>
+          {saved && (
+            <QuoteLink
+              estimate={saved}
+              dirty={dirty}
+              onChange={(row) => {
+                setSaved(row);
+                setEst((e) => ({ ...e, status: row.status }));
+              }}
+            />
+          )}
           <p className="text-xs text-muted">
             “Print / PDF” opens your printer window. Choose <strong>Save as PDF</strong> there to email it as a file.
           </p>
