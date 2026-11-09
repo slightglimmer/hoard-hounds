@@ -2,7 +2,7 @@ import { createHmac } from 'node:crypto';
 const q = await import(new URL('../../supabase/functions/public-quote/index.ts', import.meta.url).href);
 const hook = await import(new URL('../../supabase/functions/stripe-webhook/index.ts', import.meta.url).href);
 const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
-const env = { STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_WEBHOOK_SECRET: 'whsec_test', SUPABASE_URL: 'https://p.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'service' };
+const env = { ONLINE_PAYMENTS_ENABLED: 'true', STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_WEBHOOK_SECRET: 'whsec_test', SUPABASE_URL: 'https://p.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'service' };
 const TOK = 'A'.repeat(43);
 const JOB = '11111111-1111-4111-8111-111111111111';
 function mock({ quote = { number: 1001, total: 500 }, accept = { job_id: JOB, number: 1001, customer_email: 'pat@example.com', total: 500, deposit_amount: 100, received: 0 }, acceptError = null } = {}) {
@@ -75,3 +75,18 @@ const body = JSON.stringify({ type: 'checkout.session.completed', created: Math.
 f = mock(); r = await hook.handle(new Request('https://x', { method: 'POST', headers: { 'Stripe-Signature': sign(body) }, body }), env, f);
 const rec = f.calls.find((c) => c.url.includes('job_payments'));
 ok(r.status === 200 && rec && JSON.parse(rec.body).job_id === JOB && JSON.parse(rec.body).kind === 'deposit' && JSON.parse(rec.body).amount === '100.00', 'webhook records the quote deposit on the job');
+
+// ---- Payments are OFF by default, and live keys need separate approval
+{
+  const off = { ...env, ONLINE_PAYMENTS_ENABLED: undefined };
+  let f2 = mock(); let r2 = await q.handle(req({ action: 'accept', token: TOK, option: 'deposit' }), off, f2);
+  ok(r2.status === 503 && !f2.calls.some((c) => c.url.includes('stripe') || c.url.includes('accept_shared_estimate')), 'payments off by default: no deposit checkout, nothing accepted');
+  f2 = mock(); r2 = await q.handle(req({ action: 'accept', token: TOK, option: 'full' }), { ...env, ONLINE_PAYMENTS_ENABLED: 'yes' }, f2);
+  ok(r2.status === 503, 'only the exact value "true" turns payments on');
+  f2 = mock(); r2 = await q.handle(req({ action: 'accept', token: TOK, option: 'later' }), off, f2);
+  ok(r2.status === 200 && !f2.calls.some((c) => c.url.includes('stripe')), 'with payments off, customers can still accept (pay later)');
+  f2 = mock(); r2 = await q.handle(req({ action: 'accept', token: TOK, option: 'full' }), { ...env, STRIPE_SECRET_KEY: 'sk_live_x' }, f2);
+  ok(r2.status === 503 && !f2.calls.some((c) => c.url.includes('stripe')), 'live Stripe key refused until live mode is approved');
+  f2 = mock(); r2 = await q.handle(req({ action: 'accept', token: TOK, option: 'full' }), { ...env, STRIPE_SECRET_KEY: 'sk_live_x', STRIPE_LIVE_APPROVED: 'true' }, f2);
+  ok(r2.status === 200 && f2.calls.some((c) => c.url.includes('/checkout/sessions')), 'live key works only after explicit approval');
+}

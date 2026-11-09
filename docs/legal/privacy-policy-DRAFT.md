@@ -57,8 +57,8 @@ Only as needed to do the work and run the business:
   privacy terms: our website host (GitHub Pages); our database and file storage provider (Supabase);
   our email provider (Google Workspace); Formspree (used as a backup for website requests and to
   send us notifications); **[if used:]** Resend (confirmation emails) and Cloudflare (spam checks);
-  and Stripe (payments, including pay-over-time options such as Klarna, which are subject to those
-  companies' own terms and privacy policies).
+  and, **only once we offer online payments**, Stripe (payments, including pay-over-time options
+  such as Klarna, which are subject to those companies' own terms and privacy policies).
 - **Crew members** working on your job: the information needed to do the work (address, access
   instructions, items to keep, notes about the job). Crew members don't see payment information.
 - **Professional advisors** (such as an accountant) and **authorities** when required by law.
@@ -81,7 +81,8 @@ information.
 ## Your choices
 
 You can ask to see, correct or delete the information you've sent us, or ask us to stop contacting
-you, by emailing **[business email]** or calling (734) 589-7627.
+you, by emailing **[hoardhounds@gmail.com, once confirmed active; until then
+johnice.edward@gmail.com]** or calling (734) 589-7627.
 
 ## Children
 
@@ -93,4 +94,4 @@ We may update this policy from time to time. The date at the top shows when it l
 
 ---
 
-*Draft prepared November 2026 for review. Version: DRAFT 1.*
+*Draft prepared November 2026 for review. Version: DRAFT 2.*

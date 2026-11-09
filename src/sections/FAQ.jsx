@@ -26,7 +26,7 @@ export const FAQS = [
   },
   {
     q: 'Is there a weight limit? What if it goes over?',
-    a: 'Each dumpster rental comes with a weight allowance set by the dumpster company, and your quote shows the allowance included in your price. If the dumpster company charges for going over that weight, for extra days, or for items it doesn’t accept, we’ll show you their documentation, such as the weight ticket, and get your approval before billing you for those charges.',
+    a: 'Each dumpster rental comes with a weight allowance set by the dumpster company, and your quote shows the allowance included in your price. If the dumpster company charges for going over that weight, for extra days, or for items it doesn’t accept, we’ll show you their documentation, such as the weight ticket, and get your approval before billing you. Approved charges are passed through at the dumpster company’s actual cost, with no added fee.',
   },
   {
     q: 'What can’t go in the dumpster?',

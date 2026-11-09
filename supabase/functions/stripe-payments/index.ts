@@ -3,7 +3,9 @@
 // passed two-step login can use it: the database's is_admin() check decides.
 //
 // Secrets (Supabase dashboard -> Edge Functions -> Secrets):
-//   STRIPE_SECRET_KEY   your Stripe secret key (sk_live_... or sk_test_...)
+//   STRIPE_SECRET_KEY         your Stripe secret key (sk_test_... while testing)
+//   ONLINE_PAYMENTS_ENABLED   must be "true" or no payment link is created (off by default)
+//   STRIPE_LIVE_APPROVED      must be "true" before a live key (sk_live_...) is accepted
 // Supabase provides SUPABASE_URL and SUPABASE_ANON_KEY automatically.
 // Keep "Verify JWT" ON for this function.
 //
@@ -12,6 +14,17 @@
 const ALLOWED_ORIGINS = ['https://hoardhounds.com', 'http://localhost:5173'];
 const STRIPE_API = 'https://api.stripe.com/v1';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Payments stay OFF until you deliberately turn them on, and a live Stripe key is refused
+// until live mode is separately approved. Returns an error message, or '' if allowed.
+export function paymentsBlocked(env) {
+  if (env.ONLINE_PAYMENTS_ENABLED !== 'true') return 'Online payments are turned off.';
+  if (!env.STRIPE_SECRET_KEY) return 'Online payments aren’t set up yet (missing Stripe key).';
+  if (/^(sk|rk)_live_/.test(env.STRIPE_SECRET_KEY) && env.STRIPE_LIVE_APPROVED !== 'true') {
+    return 'Live Stripe payments haven’t been approved yet. Use a test key, or set STRIPE_LIVE_APPROVED to true once approved.';
+  }
+  return '';
+}
 
 function cors(origin) {
   return {
@@ -57,7 +70,6 @@ export async function handle(req, env, fetchImpl = fetch) {
   const origin = req.headers.get('Origin') || '';
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
   if (req.method !== 'POST') return reply(origin, 405, { error: 'Use POST.' });
-  if (!env.STRIPE_SECRET_KEY) return reply(origin, 500, { error: 'Online payments aren’t set up yet (missing Stripe key).' });
 
   const auth = req.headers.get('Authorization') || '';
   if (!auth.startsWith('Bearer ')) return reply(origin, 401, { error: 'Please sign in again.' });
@@ -67,6 +79,9 @@ export async function handle(req, env, fetchImpl = fetch) {
     if (isAdmin !== true) return reply(origin, 403, { error: 'Only an admin with two-step login can do that.' });
 
     const body = await req.json().catch(() => ({}));
+    // Cancelling an old link is always allowed; creating one needs payments switched on.
+    const blocked = paymentsBlocked(env);
+    if (blocked && !(body.action === 'cancel' && env.STRIPE_SECRET_KEY)) return reply(origin, 503, { error: blocked });
 
     if (body.action === 'cancel') {
       if (!UUID.test(body.request_id || '')) return reply(origin, 400, { error: 'Missing payment request.' });

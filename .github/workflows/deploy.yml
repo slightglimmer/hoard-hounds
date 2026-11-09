@@ -39,6 +39,9 @@ jobs:
           VITE_FORM_ENDPOINT: ${{ vars.VITE_FORM_ENDPOINT }}
           # Optional Cloudflare Turnstile spam check (the public "site key" only; the secret goes in Supabase).
           VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
+          # OFF unless set to "true": online payments (Stripe) and customer quote links.
+          VITE_ONLINE_PAYMENTS: ${{ vars.VITE_ONLINE_PAYMENTS || 'false' }}
+          VITE_QUOTE_LINKS: ${{ vars.VITE_QUOTE_LINKS || 'false' }}
           # Supabase project URL and PUBLISHABLE key for the admin dashboard. Both are public
           # by design: the database's security rules protect the data. NEVER put a secret or
           # service_role key here. A GitHub Actions variable with the same name overrides these.

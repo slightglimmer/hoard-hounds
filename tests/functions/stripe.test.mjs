@@ -3,7 +3,7 @@ const pay = await import(new URL('../../supabase/functions/stripe-payments/index
 const hook = await import(new URL('../../supabase/functions/stripe-webhook/index.ts', import.meta.url).href);
 const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
 const JOB = '11111111-1111-4111-8111-111111111111';
-const env = { STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_WEBHOOK_SECRET: 'whsec_test', SUPABASE_URL: 'https://p.supabase.co', SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'service' };
+const env = { ONLINE_PAYMENTS_ENABLED: 'true', STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_WEBHOOK_SECRET: 'whsec_test', SUPABASE_URL: 'https://p.supabase.co', SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'service' };
 
 function mockFetch({ admin = true, job = true, failInsert = false, linkForWebhook = 'plink_1', piType = 'klarna', piMeta = {} } = {}) {
   const calls = []; const payments = new Map();
@@ -71,7 +71,7 @@ f = mockFetch();
 r = await pay.handle(req({ action: 'cancel', request_id: '22222222-2222-4222-8222-222222222222' }), env, f);
 ok(r.status === 200 && f.calls.some((c) => c.url.endsWith('/v1/payment_links/plink_1')) && f.calls.some((c) => c.method === 'PATCH' && c.body.includes('cancelled')), 'cancel switches off link and marks request cancelled');
 r = await pay.handle(req({ action: 'create', job_id: JOB, kind: 'payment', amount_cents: 1000 }), { ...env, STRIPE_SECRET_KEY: '' }, mockFetch());
-ok(r.status === 500 && (await r.json()).error.includes('aren’t set up'), 'clear message when Stripe key not configured');
+ok(r.status === 503 && (await r.json()).error.includes('aren’t set up'), 'clear message when Stripe key not configured');
 
 // ---- stripe-webhook
 const sign = (body, t = Math.floor(Date.now() / 1000), secret = 'whsec_test') => `t=${t},v1=${createHmac('sha256', secret).update(`${t}.${body}`).digest('hex')}`;
@@ -114,3 +114,20 @@ ok(r.status === 200 && f.payments.size === 0, 'payments from other Stripe sales 
 body = JSON.stringify({ type: 'customer.created', data: { object: {} } });
 r = await hook.handle(hookReq(body, sign(body)), env, mockFetch());
 ok(r.status === 200, 'other Stripe events ignored with 200');
+
+// ---- Payments are OFF by default, and live keys need separate approval
+{
+  const off = { ...env, ONLINE_PAYMENTS_ENABLED: undefined };
+  let f2 = mockFetch(); let r2 = await pay.handle(req({ action: 'create', job_id: JOB, kind: 'deposit', amount_cents: 15000 }), off, f2);
+  ok(r2.status === 503 && !f2.calls.some((c) => c.url.includes('api.stripe.com')), 'payments off by default: no payment link created');
+  f2 = mockFetch(); r2 = await pay.handle(req({ action: 'create', job_id: JOB, kind: 'deposit', amount_cents: 15000 }), off, mockFetch({ admin: false }));
+  ok(r2.status === 403, 'non-admins still refused first');
+  f2 = mockFetch(); r2 = await pay.handle(req({ action: 'cancel', request_id: '22222222-2222-4222-8222-222222222222' }), off, f2);
+  ok(r2.status === 200, 'old links can still be cancelled while payments are off');
+  f2 = mockFetch(); r2 = await pay.handle(req({ action: 'create', job_id: JOB, kind: 'deposit', amount_cents: 15000 }), { ...env, STRIPE_SECRET_KEY: 'sk_live_x' }, f2);
+  ok(r2.status === 503 && !f2.calls.some((c) => c.url.includes('api.stripe.com')), 'live Stripe key refused until live mode is approved');
+  f2 = mockFetch(); r2 = await pay.handle(req({ action: 'create', job_id: JOB, kind: 'deposit', amount_cents: 15000 }), { ...env, STRIPE_SECRET_KEY: 'rk_live_x' }, f2);
+  ok(r2.status === 503, 'restricted live keys refused too');
+  f2 = mockFetch(); r2 = await pay.handle(req({ action: 'create', job_id: JOB, kind: 'deposit', amount_cents: 15000 }), { ...env, STRIPE_SECRET_KEY: 'sk_live_x', STRIPE_LIVE_APPROVED: 'true' }, f2);
+  ok(r2.status === 200, 'live key works only after explicit approval');
+}

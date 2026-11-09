@@ -477,6 +477,15 @@ export default function EstimateEditor({ id }) {
             <section className="card animate-rise p-5 sm:p-6" style={{ animationDelay: '90ms' }} aria-labelledby="scope-title">
               <h3 id="scope-title" className="font-display text-xl font-semibold">Scope & dumpster allowance</h3>
               <p className="mt-1 text-sm text-muted">Shown on the estimate and the customer’s quote link, so they know exactly what’s included.</p>
+              {(!String(est.dumpster_weight_allowance_tons).trim() || !String(est.dumpster_rental_days).trim() || !String(est.overage_rate_per_ton).trim() || !String(est.extra_day_rate).trim()) && (
+                <p className="mt-3 flex gap-2 rounded-2xl bg-gold/15 px-4 py-3 text-sm text-gold-deep">
+                  <AdminIcon name="alert" className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    Before the customer approves, fill in the included weight, rental days and the dumpster company’s overweight and
+                    extra-day rates, so extra charges are disclosed up front.
+                  </span>
+                </p>
+              )}
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <Field label="Scope of work" optional className="sm:col-span-2" hint="What you’ll do, in plain words. Mention anything set aside or left behind.">
                   {(p) => <textarea {...p} rows={3} className="input resize-y" placeholder="e.g. Clear all rooms, basement and garage. Set aside photo albums and papers for the family." value={est.scope_of_work} onChange={set('scope_of_work')} />}

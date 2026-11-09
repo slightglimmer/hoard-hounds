@@ -11,7 +11,10 @@
 // Amounts always come from the database, never from the customer's browser.
 //
 // Secrets (Supabase dashboard -> Edge Functions -> Secrets):
-//   STRIPE_SECRET_KEY   your Stripe secret key (same one stripe-payments uses)
+//   STRIPE_SECRET_KEY         your Stripe secret key (same one stripe-payments uses)
+//   ONLINE_PAYMENTS_ENABLED   must be "true" for the deposit / pay-in-full options (off by default);
+//                             without it, customers can still view and accept ("pay later")
+//   STRIPE_LIVE_APPROVED      must be "true" before a live key (sk_live_...) is accepted
 // Supabase provides SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY automatically.
 // Turn "Verify JWT" OFF for this function: customers don't have accounts.
 //
@@ -22,6 +25,17 @@ const STRIPE_API = 'https://api.stripe.com/v1';
 const TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const OPTIONS = ['deposit', 'full', 'later'];
+
+// Payments stay OFF until you deliberately turn them on, and a live Stripe key is refused
+// until live mode is separately approved. Returns an error message, or '' if allowed.
+export function paymentsBlocked(env) {
+  if (env.ONLINE_PAYMENTS_ENABLED !== 'true') return 'Online payments are turned off.';
+  if (!env.STRIPE_SECRET_KEY) return 'Online payments aren’t set up yet (missing Stripe key).';
+  if (/^(sk|rk)_live_/.test(env.STRIPE_SECRET_KEY) && env.STRIPE_LIVE_APPROVED !== 'true') {
+    return 'Live Stripe payments haven’t been approved yet. Use a test key, or set STRIPE_LIVE_APPROVED to true once approved.';
+  }
+  return '';
+}
 
 function cors(origin) {
   return {
@@ -106,8 +120,8 @@ export async function handle(req, env, fetchImpl = fetch) {
     if (body.action !== 'accept') return reply(origin, 400, { error: 'Unknown action.' });
     const option = OPTIONS.includes(body.option) ? body.option : null;
     if (!option) return reply(origin, 400, { error: 'Please choose how you’d like to pay.' });
-    if (option !== 'later' && !env.STRIPE_SECRET_KEY) {
-      return reply(origin, 503, { error: 'Online payment isn’t available right now. Choose “pay later”, or call or text us at 734-589-7627.' });
+    if (option !== 'later' && paymentsBlocked(env)) {
+      return reply(origin, 503, { error: 'Online payment isn’t available right now. You can accept the quote and we’ll arrange payment, or call or text us at 734-589-7627.' });
     }
 
     const accepted = await rpc(env, fetchImpl, 'accept_shared_estimate', { p_token: token, p_via: option });

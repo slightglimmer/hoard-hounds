@@ -303,7 +303,7 @@ export function buildDemoData(today = new Date()) {
       default_terms: 'This estimate is based on the photos and details provided. The final price is confirmed with you after a walkthrough or on arrival, before any work begins.',
       default_valid_days: 30,
       default_deposit: null,
-      default_overage_terms: 'Your price includes the dumpster allowance shown above. If the dumpster provider charges extra for weight over that allowance, for keeping the dumpster longer than the included rental days, or for items they don’t accept, we will show you the provider’s documentation (such as the weight ticket or invoice) and get your approval before billing you for those charges. We never charge a saved card automatically.',
+      default_overage_terms: 'Your price includes the dumpster allowance shown above. If the dumpster provider charges extra for weight over that allowance, for keeping the dumpster longer than the included rental days, or for items they don’t accept, we will show you the provider’s documentation (such as the weight ticket or invoice) and get your approval before billing you. Approved charges are passed through at the provider’s actual cost, with no added fee. We never charge a saved card automatically.',
       default_labor_rate: '20.00',
       default_contingency_pct: '10.00',
       default_target_margin_pct: '30.00',

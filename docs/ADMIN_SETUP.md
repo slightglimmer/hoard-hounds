@@ -108,6 +108,17 @@ Do these once, in order. Claude can walk you through each one.
    - Copy its **Signing secret** (starts with `whsec_`) into Supabase **Edge Functions → Secrets**
      as `STRIPE_WEBHOOK_SECRET`.
 
+**Payments stay OFF until you switch them on, in two places** (both are needed):
+- Supabase **Edge Functions → Secrets**: `ONLINE_PAYMENTS_ENABLED` = `true`. Without it, the server
+  refuses to create any payment link or checkout.
+- GitHub **Actions variables**: `VITE_ONLINE_PAYMENTS` = `true` (shows the payment buttons), then
+  re-run the deploy. `VITE_QUOTE_LINKS` = `true` turns on customer quote links (after the
+  `public-quote` function is deployed).
+
+A **live** Stripe key (`sk_live_…`) is refused until you also add the secret `STRIPE_LIVE_APPROVED`
+= `true`. Test keys (`sk_test_…`) work without it. To switch payments off again, delete
+`ONLINE_PAYMENTS_ENABLED` (and the GitHub variable).
+
 **Try it in test mode first:** Stripe has a test mode with its own keys (`sk_test_…`) and webhook.
 Pay a test link with card number `4242 4242 4242 4242`, any future date and any CVC, then check that
 the payment appears on the job. Then repeat steps 5 and 6 with your live keys.

@@ -53,7 +53,7 @@ export function demoQuote() {
     dumpster_rental_days: 7,
     overage_rate_per_ton: 75,
     extra_day_rate: 15,
-    overage_terms: 'Your price includes the dumpster allowance shown above. If the dumpster company charges extra for weight over that allowance, for keeping the dumpster longer than the included rental days, or for items they don’t accept, we will show you their documentation (such as the weight ticket) and get your approval before billing you for those charges. We never charge a saved card automatically.',
+    overage_terms: 'Your price includes the dumpster allowance shown above. If the dumpster company charges extra for weight over that allowance, for keeping the dumpster longer than the included rental days, or for items they don’t accept, we will show you their documentation (such as the weight ticket) and get your approval before billing you. Approved charges are passed through at the dumpster company’s actual cost, with no added fee. We never charge a saved card automatically.',
     terms: 'This estimate is based on the photos and details provided. The final price is confirmed with you after a walkthrough or on arrival, before any work begins.',
     accepted_at: s.accepted_at || null,
     accepted_via: s.accepted_via || null,

@@ -9,6 +9,7 @@ import { useToast } from '../../components/ui.jsx';
 import { api } from '../../lib/api/index.js';
 import { formatMoney } from '../../lib/money.js';
 import { MODE } from '../../lib/supabase.js';
+import { ONLINE_PAYMENTS, QUOTE_LINKS } from '../../../lib/features.js';
 
 // 32 random bytes, written with URL-safe letters: impossible to guess.
 export function newShareToken() {
@@ -27,7 +28,10 @@ const CHOSE = {
 
 function quoteMessage(estimate, url) {
   const first = estimate.customer_name?.trim().split(' ')[0];
-  return `Hi${first ? ` ${first}` : ''}, here’s your quote from Hoard Hounds for ${formatMoney(estimate.total)}: ${url}\n\nYou can accept it online and pay a deposit, pay in full, or pay over time with Klarna (subject to approval). Any questions, just reply. Thank you!`;
+  const how = ONLINE_PAYMENTS
+    ? 'You can accept it online and pay a deposit, pay in full, or pay over time with Klarna (subject to approval).'
+    : 'You can review everything that’s included and accept it online.';
+  return `Hi${first ? ` ${first}` : ''}, here’s your quote from Hoard Hounds for ${formatMoney(estimate.total)}: ${url}\n\n${how} Any questions, just reply. Thank you!`;
 }
 
 export default function QuoteLink({ estimate, dirty, onChange }) {
@@ -36,6 +40,13 @@ export default function QuoteLink({ estimate, dirty, onChange }) {
   const [confirmOff, setConfirmOff] = useState(false);
 
   // The quote-links database update hasn't been run yet (the column doesn't exist).
+  if (!QUOTE_LINKS) {
+    return (
+      <p className="rounded-2xl bg-blush/50 px-4 py-3 text-xs text-muted">
+        Customer quote links are turned off for now. Send estimates with “Copy text” or “Print / PDF”.
+      </p>
+    );
+  }
   if (!('share_token' in estimate)) {
     return (
       <p className="rounded-2xl bg-blush/50 px-4 py-3 text-xs text-muted">
@@ -125,7 +136,9 @@ export default function QuoteLink({ estimate, dirty, onChange }) {
       {!token ? (
         <>
           <p className="mt-1 text-sm text-muted">
-            Send a private link. Your customer sees this quote and can accept it, pay a deposit, pay in full, or pay over time with Klarna.
+            {ONLINE_PAYMENTS
+              ? 'Send a private link. Your customer sees this quote and can accept it, pay a deposit, pay in full, or pay over time with Klarna.'
+              : 'Send a private link. Your customer sees this quote, including the dumpster allowance, and can accept it online.'}
           </p>
           <button type="button" className="btn-primary mt-3 w-full" onClick={create} disabled={busy || estimate.total <= 0}>
             {busy ? 'Making link…' : 'Create quote link'}
@@ -161,7 +174,7 @@ export default function QuoteLink({ estimate, dirty, onChange }) {
             {confirmOff ? 'Yes, turn off this link' : 'Turn off link'}
           </button>
           <p className="mt-2 text-xs text-muted">
-            Changes you save here show up on their link right away. Stripe charges a fee on each online payment.
+            Changes you save here show up on their link right away.{ONLINE_PAYMENTS ? ' Stripe charges a fee on each online payment.' : ''}
           </p>
         </>
       )}

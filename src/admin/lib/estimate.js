@@ -111,6 +111,6 @@ export function allowanceLines(est) {
     perTon !== null && !Number.isNaN(perTon) && `${formatCents(Math.round(perTon * 100))} per extra ton`,
     perDay !== null && !Number.isNaN(perDay) && `${formatCents(Math.round(perDay * 100))} per extra day`,
   ].filter(Boolean);
-  if (rates.length) lines.push(`If needed, the dumpster company’s rates are ${rates.join(' and ')} (only billed with your approval)`);
+  if (rates.length) lines.push(`If needed, the dumpster company’s rates are ${rates.join(' and ')} (only billed at cost, with your approval)`);
   return lines;
 }

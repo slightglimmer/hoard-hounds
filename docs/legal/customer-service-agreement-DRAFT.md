@@ -10,7 +10,8 @@
 > This draft does not claim any insurance, license, certification or guarantee. Don't add any
 > until they're in place and verified.
 
-**Hoard Hounds LLC** ("Hoard Hounds," "we," "us"), Redford, Michigan · (734) 589-7627
+**Hoard Hounds LLC** ("Hoard Hounds," "we," "us"), Redford, Michigan · (734) 589-7627 ·
+**[hoardhounds@gmail.com, once confirmed active]**
 
 This agreement applies to clean-out services described in your written quote ("Quote"). By
 accepting a Quote (in writing, by email or text, or online through your quote link) you agree to
@@ -102,9 +103,12 @@ included rental days).
 something outside the allowance, we will show you the Provider's documentation (such as the weight
 ticket or invoice) and the rate that applied. Rates disclosed in your Quote are the Provider's
 rates as we understood them when the Quote was prepared; the Provider's actual invoice controls.
-**We will not charge any additional amount without your approval**, and we never charge a saved
-card automatically. **[Decision: whether pass-through charges are billed at the Provider's actual
-cost or with a handling fee — the current website and quote wording say "at cost."]**
+Approved Provider charges are **passed through at the Provider's actual cost, with no handling fee
+or markup.** **We will not charge any additional amount without your approval**, and we never
+charge a saved card automatically.
+
+6.4 **Disclosed before work begins.** Your Quote states the included dumpster allowance and, when
+known, the Provider's overweight and extra-day rates, before you approve the job.
 
 ## 7. Changes in scope
 
@@ -121,9 +125,10 @@ rental. The deposit is **credited toward your total**; it is not an extra charge
 completion]**. Approved additional charges (Section 6) are billed separately with their
 documentation.
 
-8.3 **Online payments** are processed by Stripe. Pay-over-time options such as Klarna are offered
-by those companies, subject to their approval and terms. Hoard Hounds doesn't receive or store your
-card number.
+8.3 **Online payments** *(only once Hoard Hounds offers them)* are processed by Stripe.
+Pay-over-time options such as Klarna are offered by those companies, subject to their approval and
+terms. Hoard Hounds doesn't receive or store your card number. Until online payments are offered,
+we'll tell you how to pay the deposit and balance directly.
 
 ## 9. Rescheduling and cancellation
 
@@ -157,4 +162,4 @@ This agreement, together with your Quote, is the whole agreement about the servi
 
 ---
 
-*Draft prepared November 2026 for review. Version: DRAFT 1.*
+*Draft prepared November 2026 for review. Version: DRAFT 2 (overage charges at cost, no handling fee).*

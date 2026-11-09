@@ -1030,6 +1030,10 @@ grant execute on function public.accept_shared_estimate(text, text) to service_r
 --     saves requests with the server key after checking them.
 --   - Photos go in a PRIVATE storage bucket. Admins view them through short-lived
 --     signed links; nobody else can read them.
+--
+-- All or nothing: if any step fails, everything is rolled back and nothing changes.
+
+begin;
 
 -- ---------------------------------------------------------------------------
 -- Inquiries (quote requests from the website)
@@ -1240,7 +1244,7 @@ alter table public.business_settings
   add column default_target_margin_pct numeric(5, 2) check (default_target_margin_pct >= 0 and default_target_margin_pct < 95);
 
 update public.business_settings
-set default_overage_terms = 'Your price includes the dumpster allowance shown above. If the dumpster provider charges extra for weight over that allowance, for keeping the dumpster longer than the included rental days, or for items they don''t accept, we will show you the provider''s documentation (such as the weight ticket or invoice) and get your approval before billing you for those charges. We never charge a saved card automatically.'
+set default_overage_terms = 'Your price includes the dumpster allowance shown above. If the dumpster provider charges extra for weight over that allowance, for keeping the dumpster longer than the included rental days, or for items they don''t accept, we will show you the provider''s documentation (such as the weight ticket or invoice) and get your approval before billing you. Approved charges are passed through at the provider''s actual cost, with no added fee. We never charge a saved card automatically.'
 where id = 1 and default_overage_terms is null;
 
 -- ---------------------------------------------------------------------------
@@ -1428,6 +1432,8 @@ begin
   return total;
 end;
 $$;
+
+commit;
 
 
 -- ---------------------------------------------------------------------

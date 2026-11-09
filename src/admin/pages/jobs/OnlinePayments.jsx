@@ -9,6 +9,7 @@ import { api } from '../../lib/api/index.js';
 import { formatDate } from '../../lib/dates.js';
 import { formatCents, formatMoney, parseAmount } from '../../lib/money.js';
 import { MODE } from '../../lib/supabase.js';
+import { ONLINE_PAYMENTS } from '../../../lib/features.js';
 
 const STATUS = {
   open: { label: 'Waiting for customer', className: 'bg-gold/20 text-gold-deep' },
@@ -141,7 +142,19 @@ function RequestForm({ open, job, customer, balanceCents, onClose, onCreated }) 
   );
 }
 
-export default function OnlinePayments({ job, customer, balanceCents, onPaid }) {
+// Off unless VITE_ONLINE_PAYMENTS=true: no buttons, nothing is sent to Stripe.
+export default function OnlinePayments(props) {
+  if (!ONLINE_PAYMENTS) {
+    return (
+      <p className="mt-4 rounded-2xl bg-blush/50 px-4 py-3 text-sm text-muted">
+        Online payments are turned off for now. Record payments you receive (cash, check, card in person) with “Add a payment” above.
+      </p>
+    );
+  }
+  return <OnlinePaymentsPanel {...props} />;
+}
+
+function OnlinePaymentsPanel({ job, customer, balanceCents, onPaid }) {
   const notify = useToast();
   const [requests, setRequests] = useState(undefined); // undefined loading, null not set up
   const [formOpen, setFormOpen] = useState(false);

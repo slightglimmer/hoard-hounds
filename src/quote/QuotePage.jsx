@@ -13,6 +13,7 @@ import { allowanceLines, computeTotals, lineCents, minimumApplies, quantityLabel
 import { formatDate } from '../admin/lib/dates.js';
 import { formatCents, toCents } from '../admin/lib/money.js';
 import { DEMO_TOKEN, demoAccept, demoQuote, resetDemo } from './demoQuote.js';
+import { ONLINE_PAYMENTS } from '../lib/features.js';
 
 const API_URL = import.meta.env.VITE_SUPABASE_URL ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-quote` : '';
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
@@ -269,8 +270,47 @@ function Actions({ quote, token, onAccepted }) {
   if (accepted && remaining === 0) {
     return (
       <Notice tone="good" title="Paid in full. Thank you!">
-        We’ve received your payment. We’ll be in touch about your cleanout date.
+        We’ve received your payment. We’ll be in touch about your clean-out date.
       </Notice>
+    );
+  }
+
+  // Online payments are off: customers can accept the quote; payment is arranged with us directly.
+  if (!ONLINE_PAYMENTS) {
+    if (accepted) {
+      return (
+        <Notice tone="good" title="You’ve accepted this quote">
+          Thank you! We’ll be in touch to confirm your clean-out date and how to pay
+          {toCents(quote.deposit_amount) > 0 ? ' your deposit' : ''}. Questions? Call or text{' '}
+          <a className="font-semibold underline" href={SITE.phoneHref}>{SITE.phoneDisplay}</a>.
+        </Notice>
+      );
+    }
+    return (
+      <section aria-labelledby="next-step" className="space-y-4">
+        <div>
+          <h2 id="next-step" className="text-2xl font-extrabold sm:text-3xl">Ready to book?</h2>
+          <p className="mt-2 text-charcoal/80">
+            Accept below and we’ll reach out to confirm your clean-out date
+            {toCents(quote.deposit_amount) > 0 ? ' and arrange your deposit' : ''}.
+          </p>
+        </div>
+        {error && (
+          <p role="alert" className="rounded-2xl bg-gold/15 px-4 py-3 font-medium text-charcoal ring-1 ring-gold/40">{error}</p>
+        )}
+        <Choice
+          primary
+          title="Accept this quote"
+          detail="Nothing is charged online. We’ll contact you about scheduling and payment."
+          busy={busy === 'later'}
+          disabled={Boolean(busy)}
+          onClick={() => choose('later')}
+        />
+        <p className="flex items-start gap-2 text-sm text-charcoal/70">
+          <Icon name="check" className="mt-0.5 h-4 w-4 shrink-0 text-forest" />
+          <span>By accepting, you agree to the price, the dumpster allowance and the terms above.</span>
+        </p>
+      </section>
     );
   }
 
@@ -283,7 +323,7 @@ function Actions({ quote, token, onAccepted }) {
         <p className="mt-2 text-charcoal/80">
           {accepted
             ? `You accepted this quote${quote.accepted_at ? ` on ${michiganDate(quote.accepted_at)}` : ''}. You can pay what’s left here whenever you’re ready.`
-            : 'Choose how you’d like to accept. We’ll reach out to confirm your cleanout date.'}
+            : 'Choose how you’d like to accept. We’ll reach out to confirm your clean-out date.'}
         </p>
       </div>
 
@@ -329,7 +369,7 @@ function Actions({ quote, token, onAccepted }) {
         <Icon name="check" className="mt-0.5 h-4 w-4 shrink-0 text-forest" />
         <span>
           Payments are processed securely by Stripe. Pay by card, or split it into smaller payments with Klarna (subject to
-          approval). {!accepted && 'By accepting, you agree to the price and terms above.'}
+          approval). {!accepted && 'By accepting, you agree to the price, the dumpster allowance and the terms above.'}
         </span>
       </p>
     </section>
@@ -402,7 +442,7 @@ export default function QuotePage() {
           )}
           {done === 'later' && (
             <Notice tone="good" title="You’re all set. Your quote is accepted!">
-              We’ll reach out soon to confirm your cleanout date. You can come back to this link any time to pay.
+              We’ll reach out soon to confirm your clean-out date.{ONLINE_PAYMENTS ? ' You can come back to this link any time to pay.' : ''}
             </Notice>
           )}
           {done === 'nothing_due' && (
