@@ -217,6 +217,10 @@ export function buildDemoData(today = new Date()) {
   // A brand-new lead with no date yet.
   const lead = makeJob(null, 'lead');
   financials.push({ job_id: lead.id, quoted_amount: null, agreed_price: null, admin_notes: null, is_demo: true });
+  // Always at least one upcoming, booked job (the random months above may not include one).
+  const upcoming = makeJob(toISODate(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 5)), 'scheduled');
+  financials.push({ job_id: upcoming.id, quoted_amount: '1650.00', agreed_price: '1650.00', admin_notes: null, is_demo: true });
+  payments.push({ id: newId(), job_id: upcoming.id, received_on: todayStr, kind: 'deposit', amount: '425.00', method: 'card', notes: null, is_demo: true });
   // And one happening today.
   const current = makeJob(todayStr, 'in_progress');
   financials.push({ job_id: current.id, quoted_amount: '875.00', agreed_price: '875.00', admin_notes: null, is_demo: true });

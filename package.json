@@ -7,7 +7,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.js",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:functions": "node --experimental-strip-types tests/functions/run.mjs",
+    "test:db": "tests/db/run.sh",
+    "test:ui": "tests/ui/run.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.3",
