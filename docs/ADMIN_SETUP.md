@@ -72,6 +72,7 @@ Some new dashboard features need a small addition to your database. Claude will 
   **"All done! Estimates are set up."**
 - **Online payments:** see "Online payments: cards and Klarna (Stripe)" below.
 - **Quote links:** see "Quote links: customers accept and pay online" below.
+- **Website requests and dumpsters:** see "Website requests (Inquiries) and dumpsters" below.
 
 (Setting up from scratch? `supabase/setup_everything.sql` already includes every update.)
 
@@ -145,6 +146,50 @@ To see what customers see without a real quote, open **hoardhounds.com/quote/#de
 
 ---
 
+## Website requests (Inquiries) and dumpsters
+
+Saves quote requests and their photos in your dashboard (**Inquiries**), and adds dumpster
+tracking on jobs, the private **Job costing** calculator on estimates, and the dumpster allowance
+on estimates and quote links. Until you do these steps, everything keeps working the old way:
+requests arrive by email through Formspree, and the new sections stay hidden.
+
+**Before switching the website form over:** the privacy policy needs updating, because it
+currently says photos are kept by the form service. A draft is in
+`docs/legal/privacy-policy-DRAFT.md`. Get it reviewed, then ask Claude to publish it.
+
+1. **Database update:** Supabase → **SQL Editor** → **+** (new query) → paste everything from
+   **supabase/migrations/20261109000006_inquiries_dumpsters.sql** → **Run**. It should say
+   *"All done! Inquiries, photos and dumpster tracking are set up."* This also creates the private
+   photo storage. Nothing existing is deleted; "Truck rental" is just hidden for new expenses.
+2. **Add the server function:** Supabase → **Edge Functions** → **Deploy a new function** →
+   **Via editor**. Name it `submit-inquiry`, paste everything from
+   **supabase/functions/submit-inquiry/index.ts**, deploy, then turn **off** "Verify JWT" in its
+   settings. (Website visitors don't have accounts. The function checks every request itself.)
+3. **Switch the website form** (only after the privacy policy is updated): GitHub → the
+   hoard-hounds repository → **Settings → Secrets and variables → Actions → Variables** → add
+   `VITE_FORM_PROVIDER` with the value `supabase`. Then re-run the latest "Deploy to GitHub Pages"
+   action (Actions tab → the latest run → **Re-run all jobs**). Keep your existing
+   `VITE_FORM_ENDPOINT` (Formspree): it becomes the backup if the new system is ever unreachable,
+   and it emails you a short "new request" alert.
+4. **Test it:** on hoardhounds.com, send yourself a request with a photo. It should say
+   *"Thanks! Your request #101 is in."* and appear under **Inquiries** with the photo. To undo,
+   delete the `VITE_FORM_PROVIDER` variable and re-run the deploy.
+
+**Optional, free extras** (you can add them later):
+- **Spam check (Cloudflare Turnstile):** make a free Cloudflare account → Turnstile → add the site
+  `hoardhounds.com`. Put the **site key** in GitHub Actions variables as `VITE_TURNSTILE_SITE_KEY`,
+  and the **secret key** in Supabase **Edge Functions → Secrets** as `TURNSTILE_SECRET_KEY`. Set
+  both, or neither.
+- **Confirmation emails (Resend):** free tier. Verify your domain in Resend, then add Supabase
+  secrets `RESEND_API_KEY`, `INQUIRY_FROM_EMAIL` (for example `Hoard Hounds <hello@hoardhounds.com>`)
+  and `OWNER_NOTIFY_EMAIL`. The website only says "we emailed you" when an email was really sent.
+
+Good to know: Supabase's free plan includes 1 GB of file storage. Photos are shrunk to about
+300–600 KB before upload, so that's roughly 2,000+ photos. Delete spam requests (and their
+photos) with **Delete request** on the request page.
+
+---
+
 ## Later, if you need them
 
 **Lost your phone or authenticator app?** In Supabase, open **SQL Editor**, paste this and click **Run**.
@@ -167,6 +212,16 @@ Expenses → This year → Export CSV.
 
 ## Technical notes (for developers)
 
+- Inquiries: the `submit-inquiry` function validates fields, checks image file contents (JPEG, PNG,
+  WEBP, HEIC; max 6 photos, 8 MB each), rate-limits by a keyed hash of the sender's IP (5/hour) and
+  by email (5/day), optionally verifies Turnstile, saves with the service role, and uploads photos
+  to the private `inquiry-photos` bucket under random names. Storage policies allow only admins
+  (aal2) to view or delete; there are no client upload policies. Admins see photos through 1-hour
+  signed URLs (the admin CSP allows images from the Supabase origin).
+- Job costing (`estimate_costing`) and dumpster rentals are admin-only and are never included in
+  `get_shared_estimate`. Suggested price = cost / (1 − margin), rounded up to the dollar.
+- Tests: `npm run test:functions`, `npm run test:db` (local PostgreSQL), `npm run test:ui`
+  (Playwright). See `tests/README.md`.
 - Quote links: each shared estimate has a random 256-bit `share_token`, used only in the URL fragment
   (`/quote/#token`), so it isn't sent in requests or referrers. The `public-quote` function reads and
   accepts quotes only through `get_shared_estimate` / `accept_shared_estimate`, which only the

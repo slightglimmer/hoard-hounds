@@ -44,6 +44,10 @@ visitors see the full content immediately instead of waiting for JavaScript.
 
 ## 3. Receiving quote requests (the form backend)
 
+> **Recommended:** `VITE_FORM_PROVIDER=supabase` saves requests and photos in your own admin
+> dashboard (Inquiries), with Formspree kept as the backup. See "Website requests (Inquiries) and
+> dumpsters" in [docs/ADMIN_SETUP.md](docs/ADMIN_SETUP.md). The options below still work.
+
 A website on its own can't store anything. The quote form is fully built (validation, photo upload, resizing,
 spam protection, success and error messages), but it needs a **form service** to receive each request, store the
 photos and email you. The form works in three modes, set with the `VITE_FORM_PROVIDER` setting:
@@ -164,7 +168,7 @@ Hoard Hounds' completed jobs.
 | File | Used in | Suggested photo |
 |---|---|---|
 | `public/images/hero-cleared-room.svg` | Hero | A bright, empty, freshly cleared room (ideally one of your own jobs, with the owner's permission) |
-| `public/images/about-home.svg` | About | Your truck, your team in branded shirts, or a Metro Detroit street |
+| `public/images/about-home.svg` | About | Your team in branded shirts, a finished clean-out (with permission), or a Metro Detroit street |
 
 To swap one: add your photo (e.g. `public/images/hero.jpg`, around 1600 px wide, compressed to under 300 KB with
 [Squoosh](https://squoosh.app)), then update the `src` and `alt` text in `src/sections/Hero.jsx` or
@@ -227,6 +231,8 @@ estate cleanouts.
 A private business dashboard for the owner:
 
 - **Overview:** revenue, expenses, estimated labor and net profit, with a monthly chart.
+- **Inquiries:** quote requests from the website with the customer's photos; turn one into an
+  estimate or a job.
 - **Expenses:** expenses, recurring bills, categories with suggested tax categories, CSV export.
 - **Price Sheet:** services and prices, plus numbered customer estimates (copy as text or print/PDF).
 - **Jobs:** jobs from lead to completed, customers, payments received, job costs and profit per job.

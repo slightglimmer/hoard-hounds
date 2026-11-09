@@ -26,12 +26,19 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Quick checks (server functions and the pricing calculator); a failure stops the deploy.
+      - run: npm run test:functions
       - run: npm run build
         env:
           # Set VITE_FORM_ENDPOINT under Settings -> Secrets and variables -> Actions -> Variables
           # (e.g. your Formspree URL). Until it's set, the quote form stays in preview mode.
-          VITE_FORM_PROVIDER: endpoint
+          # Where quote requests go. "endpoint" = Formspree (the default). Set the Actions variable
+          # VITE_FORM_PROVIDER to "supabase" to save requests and photos in the dashboard instead
+          # (Formspree then stays as the backup and the email alert).
+          VITE_FORM_PROVIDER: ${{ vars.VITE_FORM_PROVIDER || 'endpoint' }}
           VITE_FORM_ENDPOINT: ${{ vars.VITE_FORM_ENDPOINT }}
+          # Optional Cloudflare Turnstile spam check (the public "site key" only; the secret goes in Supabase).
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
           # Supabase project URL and PUBLISHABLE key for the admin dashboard. Both are public
           # by design: the database's security rules protect the data. NEVER put a secret or
           # service_role key here. A GitHub Actions variable with the same name overrides these.

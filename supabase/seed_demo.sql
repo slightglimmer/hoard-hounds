@@ -24,11 +24,11 @@ begin
   returning id into emp_b;
 
   insert into public.price_items (name, description, unit, unit_price, minimum_charge, sort_order, is_demo) values
-    ('Single item pickup', 'One bulky item (couch, mattress, appliance)', 'item', 95, 95, 10, true),
-    ('Quarter truck load', 'About 3-4 cubic yards', 'load', 225, null, 20, true),
-    ('Half truck load', 'About 7-8 cubic yards', 'load', 395, null, 30, true),
-    ('Full truck load', 'About 15 cubic yards', 'load', 650, null, 40, true),
-    ('Labor (per crew member)', 'Sorting, bagging, carrying', 'hour', 45, null, 50, true);
+    ('Mattress or appliance fee', 'Items the dumpster company charges extra to accept', 'item', 95, 95, 10, true),
+    ('10-yard dumpster (arranged)', 'Delivery, pickup and disposal through a dumpster rental company', 'flat', 450, null, 20, true),
+    ('20-yard dumpster (arranged)', 'Delivery, pickup and disposal through a dumpster rental company', 'flat', 595, null, 30, true),
+    ('30-yard dumpster (arranged)', 'Delivery, pickup and disposal through a dumpster rental company', 'flat', 725, null, 40, true),
+    ('Clean-out crew labor (per crew member)', 'Sorting, bagging, carrying and loading', 'hour', 45, null, 50, true);
 
   for m in 1..months loop
     -- Two sample jobs a month, each with a customer, payments, hours and job costs.
@@ -67,13 +67,15 @@ begin
           values (emp_b, job, d, 6, 'approved', true);
         end if;
 
-        select id into cat from public.expense_categories where name = 'Dump & disposal fees';
+        -- 'Dumpster rental' comes with the inquiries & dumpster update; 'Other' if it hasn't been run.
+        select id into cat from public.expense_categories where name in ('Dumpster rental', 'Other')
+        order by name = 'Dumpster rental' desc limit 1;
         insert into public.expenses (expense_date, vendor, description, category_id, amount, payment_method, job_id, is_demo)
-        values (d, 'Demo Landfill', 'Disposal fee', cat, 85 + i * 20, 'card', job, true);
+        values (d, 'Demo Roll-Off Co.', '20-yard dumpster rental', cat, 425 + i * 50, 'card', job, true);
 
-        select id into cat from public.expense_categories where name = 'Truck rental';
+        select id into cat from public.expense_categories where name = 'Supplies';
         insert into public.expenses (expense_date, vendor, description, category_id, amount, payment_method, job_id, is_demo)
-        values (d, 'Demo Truck Rental', 'Box truck, 1 day', cat, 129, 'card', job, true);
+        values (d, 'Demo Hardware', 'Contractor bags and gloves', cat, 42, 'card', job, true);
       end if;
     end loop;
 
