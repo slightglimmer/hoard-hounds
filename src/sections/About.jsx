@@ -44,11 +44,12 @@ export default function About() {
             </h2>
           </Reveal>
           <Reveal delay={100} className="mt-6 space-y-4 text-lg leading-relaxed text-charcoal/85">
-            <p>Hoard Hounds LLC is a locally owned property cleanout business based in Redford, Michigan.</p>
+            <p>Hoard Hounds LLC is a locally owned property clean-out and organizing company based in Redford, Michigan.</p>
             <p>
               We believe that every property deserves a fresh start. Whether you’re preparing a home for sale, clearing
-              out an investment property, or managing an estate, our goal is to make the cleanout process
-              straightforward and stress-free.
+              out an investment property, or managing an estate, our goal is to make the clean-out process
+              straightforward and stress-free. Our crew handles the sorting and the heavy lifting, and we coordinate the
+              dumpster with a local rental company, so you don’t have to.
             </p>
             <p>
               We’re proud to serve Metro Detroit with friendly communication, transparent estimates, and dependable

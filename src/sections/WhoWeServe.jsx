@@ -21,7 +21,7 @@ const AUDIENCES = [
   {
     icon: 'building',
     title: 'Property Managers',
-    text: 'A dependable cleanout partner for the homes and units you oversee, with clear estimates you can share with owners.',
+    text: 'A dependable clean-out partner for the homes and units you oversee, with clear estimates you can share with owners.',
   },
   {
     icon: 'scroll',
@@ -31,7 +31,7 @@ const AUDIENCES = [
   {
     icon: 'heart',
     title: 'Homeowners',
-    text: 'Downsizing, moving or finally tackling the basement? We haul away what you no longer need.',
+    text: 'Downsizing, moving or finally tackling the basement? We’ll help you sort it out and clear what you no longer need.',
   },
 ];
 
@@ -53,7 +53,7 @@ export default function WhoWeServe() {
                 Work with properties regularly?
               </p>
               <p className="mt-2 text-cream/85">
-                Tell us about your upcoming projects. We’d love to be the cleanout team you call each time.
+                Tell us about your upcoming projects. We’d love to be the clean-out team you call each time.
               </p>
               <a href="#quote" className="btn-gold mt-5 min-h-11 py-2.5 text-sm">
                 Introduce Yourself

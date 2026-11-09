@@ -2,7 +2,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 import Icon from '../components/Icon.jsx';
 import Reveal from '../components/Reveal.jsx';
 import { SERVICES, SITE } from '../config/site.js';
-import { MAX_PHOTOS, MAX_TOTAL_BYTES, compressImage, isDemoMode, submitQuote } from '../lib/submitQuote.js';
+import { MAX_PHOTOS, MAX_TOTAL_BYTES, SubmitError, TURNSTILE_SITE_KEY, compressImage, isDemoMode, submitQuote } from '../lib/submitQuote.js';
+import Turnstile from '../components/Turnstile.jsx';
 
 const EMPTY = {
   name: '',
@@ -12,10 +13,33 @@ const EMPTY = {
   cleanoutType: '',
   description: '',
   preferredDate: '',
+  dateIsDeadline: false,
+  propertyType: '',
+  occupancy: '',
+  rooms: '',
+  volume: '',
+  access: '',
+  driveway: '',
+  restrictions: '',
+  keepItems: '',
+  hazards: '',
   consent: false,
 };
 
-const CLEANOUT_TYPES = [...SERVICES.map((s) => s.title), 'Other / Not sure'];
+const CLEANOUT_TYPES = [...SERVICES.map((s) => s.title), 'Sorting & Organizing', 'Other / Not sure'];
+
+// Optional details. Values match the database (supabase/migrations/..._inquiries_dumpsters.sql).
+const DETAIL_CHOICES = [
+  { name: 'propertyType', label: 'Property type', options: [['house', 'House'], ['condo', 'Condo or apartment'], ['multi_unit', 'Duplex or multi-unit'], ['mobile_home', 'Mobile home'], ['commercial', 'Commercial'], ['other', 'Other']] },
+  { name: 'occupancy', label: 'Is anyone living there?', options: [['occupied', 'Yes, it’s occupied'], ['vacant', 'No, it’s vacant']] },
+  { name: 'rooms', label: 'Rooms or areas to clear', options: [['1-2', '1–2'], ['3-4', '3–4'], ['5-7', '5–7'], ['8+', '8 or more']] },
+  { name: 'volume', label: 'How full is it?', options: [['light', 'Light: some items in a few rooms'], ['moderate', 'Moderate: most rooms have a lot of items'], ['heavy', 'Heavy: rooms are full or hard to walk through'], ['not_sure', 'Not sure']] },
+  { name: 'access', label: 'Stairs or elevator?', options: [['ground', 'Mostly ground level'], ['stairs', 'Stairs'], ['elevator', 'Elevator'], ['not_sure', 'Not sure']] },
+  { name: 'driveway', label: 'Driveway for a dumpster?', options: [['yes', 'Yes, there’s a driveway'], ['street_only', 'No, street parking only'], ['shared_or_limited', 'Shared or limited space'], ['not_sure', 'Not sure']] },
+];
+
+const SELECT_ARROW =
+  "appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23243B32%22%20stroke-width=%222%22%3E%3Cpath%20d=%22m6%209%206%206%206-6%22/%3E%3C/svg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat pr-11";
 
 function validate(v) {
   const errors = {};
@@ -68,8 +92,10 @@ export default function QuoteForm() {
   const [processing, setProcessing] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [status, setStatus] = useState('idle'); // idle | submitting | success | error
-  const [demoResult, setDemoResult] = useState(false);
-  const [photosDropped, setPhotosDropped] = useState(false);
+  const [result, setResult] = useState(null);
+  const [serverError, setServerError] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileKey, setTurnstileKey] = useState(0);
   const [minDate, setMinDate] = useState(undefined);
 
   // Set on the client only, so the prerendered HTML matches what React renders first.
@@ -138,6 +164,7 @@ export default function QuoteForm() {
     if (form.elements['bot-field']?.value) return;
 
     const found = validate(values);
+    if (TURNSTILE_SITE_KEY && !turnstileToken) found.turnstile = 'Please complete the “verify you’re human” check.';
     setErrors(found);
     const firstError = Object.keys(found)[0];
     if (firstError) {
@@ -146,8 +173,9 @@ export default function QuoteForm() {
     }
 
     setStatus('submitting');
+    setServerError('');
     try {
-      const result = await submitQuote(
+      const sent = await submitQuote(
         {
           ...values,
           name: values.name.trim(),
@@ -155,18 +183,30 @@ export default function QuoteForm() {
           phone: values.phone.trim(),
           address: values.address.trim(),
           description: values.description.trim(),
+          restrictions: values.restrictions.trim(),
+          keepItems: values.keepItems.trim(),
+          hazards: values.hazards.trim(),
         },
         photos,
+        { turnstileToken },
       );
-      setDemoResult(result.demo);
-      setPhotosDropped(!!result.photosDropped);
+      setResult(sent);
       setStatus('success');
       photos.forEach((p) => URL.revokeObjectURL(p.url));
       setPhotos([]);
       setValues(EMPTY);
       formRef.current?.closest('section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } catch {
+    } catch (err) {
+      if (err instanceof SubmitError) {
+        setErrors(err.fieldErrors);
+        setServerError(err.message);
+        const first = Object.keys(err.fieldErrors)[0];
+        if (first) document.getElementById(id(first))?.focus();
+      }
       setStatus('error');
+      // A Turnstile token works once; get a fresh one for the next try.
+      setTurnstileToken('');
+      setTurnstileKey((k) => k + 1);
     }
   }
 
@@ -187,8 +227,8 @@ export default function QuoteForm() {
             Tell us about your property
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-charcoal/80">
-            Share a few details and photos, and we’ll follow up with an estimate or to schedule a walkthrough. There’s no
-            cost or obligation.
+            Share a few details and photos, and we’ll follow up with a written quote or to schedule a walkthrough. There’s
+            no cost or obligation, and nothing is scheduled until you approve.
           </p>
 
           <div className="mt-8 rounded-3xl bg-forest p-7 text-cream">
@@ -197,7 +237,9 @@ export default function QuoteForm() {
               {[
                 'Which rooms or areas need to be cleared',
                 'Large items like furniture, appliances or mattresses',
+                'Anything you want to keep, donate or have set aside',
                 'Whether the home is vacant or occupied, and how we can access it',
+                'Where a dumpster could go, such as a driveway',
                 'Any deadline, such as a listing or closing date',
               ].map((t) => (
                 <li key={t} className="flex gap-3">
@@ -223,24 +265,35 @@ export default function QuoteForm() {
                 <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-sage-light text-forest">
                   <Icon name="check" className="h-8 w-8" strokeWidth={2.4} />
                 </span>
-                <h3 className="mt-6 text-2xl font-bold">Thanks! Your request is in.</h3>
+                <h3 className="mt-6 text-2xl font-bold">
+                  Thanks! Your request{result?.number ? ` #${result.number}` : ''} is in.
+                </h3>
                 <p className="mx-auto mt-3 max-w-md text-charcoal/80">
                   We’ll review your project and reach out using the contact details you provided to talk through next
                   steps and your estimate.
                 </p>
-                {photosDropped && (
+                {result?.emailSent && (
+                  <p className="mx-auto mt-3 max-w-md text-sm text-charcoal/75">We’ve also emailed you a confirmation.</p>
+                )}
+                {result?.photosFailed > 0 && (
+                  <p className="mx-auto mt-5 max-w-md rounded-xl bg-gold/15 px-4 py-3 text-sm text-charcoal/85">
+                    Your details came through, but {result.photosFailed === 1 ? '1 photo' : `${result.photosFailed} photos`} couldn’t
+                    be uploaded. Please text {result.photosFailed === 1 ? 'it' : 'them'} to {SITE.phoneDisplay} or email {SITE.email}.
+                  </p>
+                )}
+                {result?.photosDropped && (
                   <p className="mx-auto mt-5 max-w-md rounded-xl bg-gold/15 px-4 py-3 text-sm text-charcoal/85">
                     Your details came through, but we couldn’t attach your photos. We may ask you to text or email
                     them to {SITE.phoneDisplay} or {SITE.email}.
                   </p>
                 )}
-                {demoResult && (
+                {result?.demo && (
                   <p className="mx-auto mt-5 max-w-md rounded-xl bg-gold/15 px-4 py-3 text-sm text-charcoal/85">
                     <strong>Preview mode:</strong> this copy of the site isn’t connected to a form service yet, so
                     nothing was sent. See the README to turn on submissions.
                   </p>
                 )}
-                <button type="button" className="btn-outline mt-8" onClick={() => setStatus('idle')}>
+                <button type="button" className="btn-outline mt-8" onClick={() => { setResult(null); setStatus('idle'); }}>
                   Submit another request
                 </button>
               </div>
@@ -280,7 +333,7 @@ export default function QuoteForm() {
                       aria-describedby={describedBy('phone')} required />
                   </Field>
                   <Field id={id('cleanoutType')} label="Type of Cleanout" error={errors.cleanoutType}>
-                    <select id={id('cleanoutType')} name="cleanoutType" className="field appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23243B32%22%20stroke-width=%222%22%3E%3Cpath%20d=%22m6%209%206%206%206-6%22/%3E%3C/svg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat pr-11"
+                    <select id={id('cleanoutType')} name="cleanoutType" className={`field ${SELECT_ARROW}`}
                       value={values.cleanoutType} onChange={update} aria-invalid={!!errors.cleanoutType}
                       aria-describedby={describedBy('cleanoutType')} required>
                       <option value="" disabled>Choose one…</option>
@@ -344,6 +397,7 @@ export default function QuoteForm() {
                     <p id={`${id('photos')}-status`} className="mt-2 text-sm text-charcoal/70" aria-live="polite">
                       {photoMessage || (photos.length ? `${photos.length} of ${MAX_PHOTOS} photos added (${formatBytes(totalBytes)})` : '')}
                     </p>
+                    {errors.photos && <p className="mt-1.5 text-sm font-medium text-red-700">{errors.photos}</p>}
                     {photos.length > 0 && (
                       <ul className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6">
                         {photos.map((p, i) => (
@@ -363,11 +417,63 @@ export default function QuoteForm() {
                     )}
                   </div>
 
-                  <Field id={id('preferredDate')} label="Preferred Service Date" optional
-                    hint="We’ll confirm availability with you.">
-                    <input id={id('preferredDate')} name="preferredDate" type="date" min={minDate} className="field"
-                      value={values.preferredDate} onChange={update} aria-describedby={describedBy('preferredDate', true)} />
-                  </Field>
+                  {/* Optional details: folded away so the form stays short. */}
+                  <details className="group sm:col-span-2 rounded-2xl border border-forest/15 bg-cream/40 open:bg-white">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-5 py-4 [&::-webkit-details-marker]:hidden">
+                      <span>
+                        <span className="block font-bold text-forest">Property details <span className="font-normal text-charcoal/70">(optional)</span></span>
+                        <span className="mt-0.5 block text-sm text-charcoal/70">Helps us size the dumpster and the crew, and quote faster.</span>
+                      </span>
+                      <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sage-light text-xl leading-none text-forest transition group-open:rotate-45">+</span>
+                    </summary>
+                    <div className="grid gap-5 border-t border-forest/10 px-5 pt-5 pb-6 sm:grid-cols-2">
+                      {DETAIL_CHOICES.map((c) => (
+                        <Field key={c.name} id={id(c.name)} label={c.label} optional error={errors[c.name]}>
+                          <select id={id(c.name)} name={c.name} className={`field ${SELECT_ARROW}`} value={values[c.name]} onChange={update}
+                            aria-invalid={!!errors[c.name]} aria-describedby={describedBy(c.name)}>
+                            <option value="">Choose…</option>
+                            {c.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                          </select>
+                        </Field>
+                      ))}
+                      <div className="sm:col-span-2">
+                        <Field id={id('restrictions')} label="HOA, landlord or parking rules" optional error={errors.restrictions}
+                          hint="Anything that limits where a dumpster can go or when we can work.">
+                          <input id={id('restrictions')} name="restrictions" type="text" maxLength={1000} className="field"
+                            value={values.restrictions} onChange={update} aria-describedby={describedBy('restrictions', true)} />
+                        </Field>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Field id={id('keepItems')} label="Items to keep or donate" optional error={errors.keepItems}
+                          hint="Tell us what should be set aside, like photos, papers or furniture going to family.">
+                          <textarea id={id('keepItems')} name="keepItems" rows={3} maxLength={2000} className="field resize-y"
+                            value={values.keepItems} onChange={update} aria-describedby={describedBy('keepItems', true)} />
+                        </Field>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Field id={id('hazards')} label="Anything hazardous?" optional error={errors.hazards}
+                          hint="For example paint, chemicals, propane tanks, needles, mold or animal waste. We don’t handle hazardous materials, but knowing helps us plan.">
+                          <input id={id('hazards')} name="hazards" type="text" maxLength={1000} className="field"
+                            value={values.hazards} onChange={update} aria-describedby={describedBy('hazards', true)} />
+                        </Field>
+                      </div>
+                    </div>
+                  </details>
+
+                  <div>
+                    <Field id={id('preferredDate')} label="Preferred Date or Deadline" optional error={errors.preferredDate}
+                      hint="We’ll confirm availability with you.">
+                      <input id={id('preferredDate')} name="preferredDate" type="date" min={minDate} className="field"
+                        value={values.preferredDate} onChange={update} aria-describedby={describedBy('preferredDate', true)} />
+                    </Field>
+                    {values.preferredDate && (
+                      <label className="mt-2 flex cursor-pointer items-center gap-2.5 text-sm text-charcoal/85">
+                        <input type="checkbox" name="dateIsDeadline" checked={values.dateIsDeadline} onChange={update}
+                          className="h-4 w-4 accent-forest" />
+                        This is a firm deadline (like a closing or move-out date)
+                      </label>
+                    )}
+                  </div>
 
                   <div className="sm:col-span-2">
                     <div className="flex gap-3">
@@ -388,10 +494,18 @@ export default function QuoteForm() {
                   </div>
                 </div>
 
+                {TURNSTILE_SITE_KEY && (
+                  <div className="mt-6">
+                    <Turnstile key={turnstileKey} siteKey={TURNSTILE_SITE_KEY} onToken={(t) => { setTurnstileToken(t); setErrors((x) => ({ ...x, turnstile: undefined })); }} />
+                    {errors.turnstile && <p className="mt-1.5 text-sm font-medium text-red-700">{errors.turnstile}</p>}
+                  </div>
+                )}
+
                 {status === 'error' && (
                   <div role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                    Sorry, something went wrong sending your request. Please try again, or call us at{' '}
-                    <a href={SITE.phoneHref} className="font-bold underline">{SITE.phoneDisplay}</a>.
+                    {serverError || 'Sorry, something went wrong and your request was not sent. Please try again, or call us at'}{' '}
+                    {!serverError && <a href={SITE.phoneHref} className="font-bold underline">{SITE.phoneDisplay}</a>}
+                    {!serverError && '.'}
                   </div>
                 )}
 

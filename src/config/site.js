@@ -5,7 +5,7 @@ export const SITE = {
   name: 'Hoard Hounds',
   legalName: 'Hoard Hounds LLC',
   tagline: 'We Clear the Clutter. You Reclaim the Property.',
-  industry: 'Property Cleanouts & Junk Removal',
+  industry: 'Property Clean-Outs & Organizing',
   city: 'Redford',
   state: 'Michigan',
   stateCode: 'MI',
@@ -28,59 +28,70 @@ export const NAV_LINKS = [
   { href: '#who-we-serve', label: 'Who We Serve' },
   { href: '#about', label: 'About' },
   { href: '#service-area', label: 'Service Area' },
+  { href: '#faq', label: 'FAQ' },
 ];
 
 export const SERVICES = [
   {
-    id: 'vacant',
-    icon: 'house',
-    title: 'Vacant Property Cleanouts',
-    description:
-      'Leftover furniture, belongings and trash removed from empty homes so they are ready to list, show, rent or renovate.',
-  },
-  {
     id: 'estate',
-    icon: 'box',
-    title: 'Estate Cleanouts',
+    icon: 'house',
+    title: 'Whole-Property & Estate Clean-Outs',
     description:
-      'Patient, respectful help clearing a loved one’s home. Tell us what stays, and we remove the rest.',
+      'Patient, respectful help clearing a loved one’s home or an entire property. Tell us what stays, and we sort, remove and load the rest.',
   },
   {
-    id: 'rental',
+    id: 'hoarding',
+    icon: 'heart',
+    title: 'Hoarding Clean-Outs',
+    description:
+      'Discreet, judgment-free help for homes where belongings have built up over time. We work at a respectful pace, set aside what matters and clear the rest.',
+  },
+  {
+    id: 'presale',
+    icon: 'sign',
+    title: 'Pre-Sale & Real Estate Clean-Outs',
+    description:
+      'Properties cleared so they’re ready to list, show, sell or close. We plan the work around your timeline and keep you or your agent updated.',
+  },
+  {
+    id: 'vacant',
     icon: 'key',
-    title: 'Rental Property Cleanouts',
+    title: 'Vacant & Abandoned Property Clean-Outs',
+    description:
+      'Leftover furniture, belongings and nonhazardous debris cleared from empty or abandoned homes so they’re ready to rent, renovate or sell.',
+  },
+  {
+    id: 'tenant',
+    icon: 'building',
+    title: 'Tenant Move-Out Clean-Outs',
     description:
       'Turnover help for landlords and property managers after a move-out or eviction, so the unit can get back on the market.',
   },
   {
-    id: 'junk',
-    icon: 'sofa',
-    title: 'Furniture & Junk Removal',
-    description:
-      'Couches, mattresses, appliances, boxes and general household junk hauled away, from a single item to a full room.',
-  },
-  {
-    id: 'investor',
-    icon: 'tools',
-    title: 'Investor Property Cleanouts',
-    description:
-      'Distressed and newly purchased properties cleared out ahead of rehab, so your crew can start on a clean slate.',
-  },
-  {
     id: 'garage',
     icon: 'door',
-    title: 'Garage & Basement Cleanouts',
+    title: 'Garage, Basement & Attic Clean-Outs',
     description:
-      'Years of stored items, old furniture and nonhazardous debris cleared from garages, basements, attics and sheds.',
+      'Years of stored items and nonhazardous clutter sorted and cleared from large garages, basements, attics and sheds.',
   },
 ];
 
+// Part of every clean-out (shown under the service cards).
+export const INCLUDED = [
+  { icon: 'clipboard', title: 'Sorting & organizing', text: 'We separate what stays, what goes and what you’d like to donate.' },
+  { icon: 'users', title: 'All the labor', text: 'Our crew does the carrying, bagging and loading.' },
+  { icon: 'box', title: 'Dumpster coordination', text: 'We arrange delivery and pickup with a local dumpster rental company.' },
+  { icon: 'check', title: 'Disposal handled', text: 'The dumpster company hauls the container away and handles disposal.' },
+];
+
 export const NOT_OFFERED = [
-  'Structural demolition',
+  'Single-item pickups',
+  'Deep cleaning',
   'Hazardous waste',
-  'Asbestos remediation',
   'Mold remediation',
+  'Asbestos remediation',
   'Biohazard cleanup',
+  'Structural demolition',
 ];
 
 export const SERVICE_AREAS = [

@@ -2,7 +2,7 @@ import Icon from '../components/Icon.jsx';
 import Reveal from '../components/Reveal.jsx';
 import { SITE } from '../config/site.js';
 
-const HIGHLIGHTS = ['Free estimates', 'Photo-based quotes', 'Locally owned in Redford'];
+const HIGHLIGHTS = ['Free estimates', 'Judgment-free help', 'Locally owned in Redford'];
 
 export default function Hero() {
   return (
@@ -26,19 +26,19 @@ export default function Hero() {
               id="hero-title"
               className="mt-6 text-[2.6rem] font-extrabold leading-[1.05] tracking-tight sm:text-6xl lg:text-[3.6rem] xl:text-[3.9rem]"
             >
-              Cluttered Property? <span className="relative whitespace-nowrap text-forest">
-                We’ve Got
+              Overwhelmed by Clutter? <span className="relative whitespace-nowrap text-forest">
+                We’ll Handle
                 <svg aria-hidden="true" viewBox="0 0 300 14" className="absolute -bottom-2 left-0 h-3 w-full text-gold" preserveAspectRatio="none">
                   <path d="M3 10 C 80 2, 200 2, 297 8" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
                 </svg>
               </span>{' '}
-              You Covered.
+              the Clean-Out.
             </h1>
           </Reveal>
           <Reveal delay={160}>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-charcoal/80 sm:text-xl">
-              Professional property cleanouts and junk removal throughout Metro Detroit. Helping homeowners, investors,
-              and real estate professionals reclaim their spaces.
+              Hoard Hounds helps Metro Detroit homeowners, families, landlords, and real estate professionals reclaim
+              their properties through organized, judgment-free clean-out services.
             </p>
           </Reveal>
           <Reveal delay={240} className="mt-8 flex flex-col gap-3 sm:flex-row">

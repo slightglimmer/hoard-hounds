@@ -67,7 +67,7 @@ export default function ServiceArea() {
             align="left"
             eyebrow="Service Area"
             title="Proudly Serving Metro Detroit"
-            intro="Based in Redford, we provide property cleanouts and junk removal across Wayne and Oakland County communities, including:"
+            intro="Based in Redford, we provide property clean-outs across Wayne and Oakland County communities, including:"
           />
           <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {SERVICE_AREAS.map((city, i) => (

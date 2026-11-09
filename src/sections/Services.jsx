@@ -1,7 +1,7 @@
 import Icon from '../components/Icon.jsx';
 import Reveal from '../components/Reveal.jsx';
 import SectionHeading from '../components/SectionHeading.jsx';
-import { NOT_OFFERED, SERVICES } from '../config/site.js';
+import { INCLUDED, NOT_OFFERED, SERVICES } from '../config/site.js';
 
 export default function Services() {
   return (
@@ -10,8 +10,8 @@ export default function Services() {
         <SectionHeading
           id="services-title"
           eyebrow="Our Services"
-          title="Cleanouts for every stage of a property’s life"
-          intro="From Detroit property cleanouts and Redford junk removal to Metro Detroit estate cleanouts, we clear unwanted furniture, household belongings, trash and nonhazardous debris from residential properties."
+          title="Clean-outs for every stage of a property’s life"
+          intro="From full estate and hoarding clean-outs to years of junk in the basement, we focus on larger jobs across Metro Detroit: our crew sorts, removes and loads, and we coordinate a dumpster for disposal."
         />
 
         <ul className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
@@ -36,14 +36,32 @@ export default function Services() {
           ))}
         </ul>
 
-        <Reveal className="mt-10 flex flex-col gap-4 rounded-3xl border border-dashed border-forest/25 bg-cream/50 p-6 sm:flex-row sm:items-start sm:gap-5 sm:p-7">
+        <Reveal className="mt-10 rounded-3xl bg-forest p-7 text-cream sm:p-8">
+          <h3 className="font-sans text-base font-bold text-gold">Included with every clean-out</h3>
+          <ul className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {INCLUDED.map((item) => (
+              <li key={item.title} className="flex gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cream/10 text-gold">
+                  <Icon name={item.icon} className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="block font-bold text-cream">{item.title}</span>
+                  <span className="mt-0.5 block text-sm leading-relaxed text-cream/80">{item.text}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+
+        <Reveal className="mt-6 flex flex-col gap-4 rounded-3xl border border-dashed border-forest/25 bg-cream/50 p-6 sm:flex-row sm:items-start sm:gap-5 sm:p-7">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sage-light text-forest">
             <Icon name="info" className="h-6 w-6" />
           </span>
           <div>
             <h3 className="font-sans text-base font-bold text-forest">What we don’t handle</h3>
             <p className="mt-1 text-charcoal/80">
-              To keep every job safe and done right, Hoard Hounds does not provide:
+              We focus on larger clean-outs that call for a crew and a dumpster. To keep every job safe and done right,
+              Hoard Hounds does not provide:
             </p>
             <ul className="mt-3 flex flex-wrap gap-2">
               {NOT_OFFERED.map((item) => (
@@ -53,8 +71,8 @@ export default function Services() {
               ))}
             </ul>
             <p className="mt-3 text-sm text-charcoal/70">
-              If your property needs one of these services, a licensed specialist should handle it first. We’re happy to
-              help with the general cleanout afterward.
+              If hazardous materials, mold, asbestos or biohazards are present, a licensed specialist should handle them
+              first. We’re happy to help with the clean-out afterward.
             </p>
           </div>
         </Reveal>

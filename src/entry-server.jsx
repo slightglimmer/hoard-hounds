@@ -28,7 +28,7 @@ export function structuredData() {
       alternateName: SITE.name,
       slogan: SITE.tagline,
       description:
-        'Locally owned property cleanout and junk removal company in Redford, Michigan, serving homeowners, real estate agents, investors, landlords, property managers and estate representatives throughout Metro Detroit.',
+        'Locally owned property clean-out and organizing company in Redford, Michigan. Estate, hoarding, pre-sale, vacant property and tenant move-out clean-outs, including sorting, labor, junk removal and dumpster coordination, for homeowners, families, real estate agents, investors, landlords and property managers throughout Metro Detroit.',
       url: SITE.url,
       logo: `${SITE.url}/brand/hoard-hounds-mark.svg`,
       image: `${SITE.url}/og-image.png`,
