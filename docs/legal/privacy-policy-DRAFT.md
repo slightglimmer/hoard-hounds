@@ -66,8 +66,10 @@ Only as needed to do the work and run the business:
 ## How long we keep it
 
 We keep quote requests, photos and job records as long as needed to provide the service and keep
-reasonable business and tax records. **[Decision: retention period, for example: requests that
-don't become jobs are deleted after ___ months; job records and photos are kept for ___ years.]**
+reasonable business and tax records. Quote requests that don't become jobs, and their photos,
+are deleted after **12 months**. Records of completed jobs, including job photos, are kept for
+**7 years**. **[Attorney to confirm these periods meet Michigan and federal record-keeping
+requirements.]**
 You can ask us to delete your information sooner (see below), unless we need to keep it for legal,
 tax or dispute reasons.
 
@@ -93,4 +95,5 @@ We may update this policy from time to time. The date at the top shows when it l
 
 ---
 
-*Draft prepared November 2026 for review. Version: DRAFT 2.*
+*Draft prepared November 2026 for attorney review. Version: DRAFT 3 (retention periods added).
+Not approved and not published.*
