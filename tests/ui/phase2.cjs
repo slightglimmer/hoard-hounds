@@ -12,7 +12,7 @@ const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
   // ---- Prices
   await p.goto(BASE + '#/price-sheet', { waitUntil: 'networkidle' }); await p.waitForTimeout(700);
   ok(!(await p.getByText('Coming in Phase').count()), 'price sheet is a real page now');
-  ok(await p.getByText('Full truck load').first().isVisible() && await p.getByText('$650.00 / load').isVisible(), 'sample prices listed with units');
+  ok(await p.getByText('Clean-out crew labor').first().isVisible() && await p.getByText('$45.00 / hour').isVisible(), 'sample prices listed with units');
   await p.screenshot({ path: S + '/shots/p2-prices.png', fullPage: true });
   await p.getByRole('button', { name: 'Add a price' }).click(); await p.waitForTimeout(250);
   await dialog.getByRole('button', { name: 'Add price' }).click(); await p.waitForTimeout(150);
@@ -30,7 +30,7 @@ const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
   await p.getByRole('button', { name: 'Move Garage cleanout up' }).click(); await p.waitForTimeout(700);
   order = await names();
   ok(order[order.length - 2] === 'Garage cleanout', 'move up works: ' + order.slice(-2).join(' > '));
-  await p.getByRole('button', { name: 'Move Single item pickup up' }).isDisabled().then(d => ok(d, 'first item cannot move up'));
+  await p.getByRole('button', { name: 'Move Mattress or appliance fee up' }).isDisabled().then(d => ok(d, 'first item cannot move up'));
 
   // ---- Estimates list
   await p.getByRole('link', { name: 'Estimates' }).click(); await p.waitForTimeout(600);
@@ -45,15 +45,15 @@ const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
   ok(await p.getByText('Add the customer’s name.').first().isVisible() && await p.getByText('Add at least one service.').first().isVisible(), 'estimate validation');
   await p.getByLabel('Name').fill('Test Realtor');
   await p.getByLabel('Property address').fill('789 Test Rd, Redford, MI');
-  await p.getByRole('button', { name: /^Full truck load \$/ }).click();
-  await p.getByRole('button', { name: /^Full truck load \$/ }).click();
-  ok((await p.getByLabel('Quantity of Full truck load').inputValue()) === '2', 'tapping a service twice makes quantity 2');
-  await p.getByRole('button', { name: /^Single item pickup \$/ }).click();
-  await p.getByLabel('Quantity of Single item pickup').fill('0.5');
+  await p.getByRole('button', { name: /^20-yard dumpster \(arranged\) \$/ }).click();
+  await p.getByRole('button', { name: /^20-yard dumpster \(arranged\) \$/ }).click();
+  ok((await p.getByLabel('Quantity of 20-yard dumpster (arranged)').inputValue()) === '2', 'tapping a service twice makes quantity 2');
+  await p.getByRole('button', { name: /^Mattress or appliance fee \$/ }).click();
+  await p.getByLabel('Quantity of Mattress or appliance fee').fill('0.5');
   ok(await p.getByText('Minimum charge', { exact: true }).isVisible(), 'minimum charge badge shown for 0.5 × $95');
-  await p.getByRole('button', { name: 'More Extra labor' }).count().then(() => {});
-  await p.getByRole('button', { name: /^Extra labor \$/ }).click();
-  await p.getByRole('button', { name: 'More Extra labor' }).click();
+  await p.getByRole('button', { name: 'More Clean-out crew labor' }).count().then(() => {});
+  await p.getByRole('button', { name: /^Clean-out crew labor \$/ }).click();
+  await p.getByRole('button', { name: 'More Clean-out crew labor' }).click();
   await p.getByRole('button', { name: 'Add a custom line' }).click();
   const customName = p.getByLabel('Line description').last();
   await customName.fill('Piano removal');
@@ -61,15 +61,15 @@ const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
   await p.getByLabel('Discount (optional)').selectOption('percent');
   await p.getByLabel('Discount percent').fill('10');
   await p.getByLabel('Deposit to book').fill('150');
-  // 2×650=1300, single item min 95, labor 2×45=90, piano 175 => 1660; 10% = 166 => 1494
+  // 2×595=1190, mattress fee min 95, labor 2×45=90, piano 175 => 1550; 10% = 155 => 1395
   const totalText = await p.getByRole('complementary', { name: 'Estimate total' }).textContent();
-  ok(totalText.includes('$1,660.00') && totalText.includes('−$166.00') && totalText.includes('$1,494.00') && totalText.includes('$150.00'), 'running total correct: ' + totalText.replace(/\s+/g, ' ').slice(0, 140));
+  ok(totalText.includes('$1,550.00') && totalText.includes('−$155.00') && totalText.includes('$1,395.00') && totalText.includes('$150.00'), 'running total correct: ' + totalText.replace(/\s+/g, ' ').slice(0, 140));
   ok(await p.getByText('Unsaved changes').isVisible(), 'unsaved changes badge');
 
   // Copy text
   await p.getByRole('button', { name: 'Copy text' }).click(); await p.waitForTimeout(300);
   const clip = await p.evaluate(() => navigator.clipboard.readText());
-  ok(clip.includes('For: Test Realtor, 789 Test Rd') && clip.includes('Estimated total: $1,494.00') && clip.includes('(734) 589-7627') && clip.includes('Deposit to book: $150.00'), 'copied text has customer, total, deposit and phone');
+  ok(clip.includes('For: Test Realtor, 789 Test Rd') && clip.includes('Estimated total: $1,395.00') && clip.includes('(734) 589-7627') && clip.includes('Deposit to book: $150.00'), 'copied text has customer, total, deposit and phone');
   console.log('---- copied text ----\n' + clip + '\n---------------------');
 
   // Save
@@ -91,7 +91,7 @@ const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
   await p.getByRole('button', { name: 'Save changes' }).click(); await p.waitForTimeout(800);
   await p.goto(BASE + '#/price-sheet/estimates'); await p.waitForTimeout(700);
   const row = p.getByRole('link', { name: /Test Realtor/ });
-  ok(await row.isVisible() && (await row.textContent()).includes('$1,494.00') && (await row.textContent()).includes('Sent'), 'list shows saved estimate, total and status');
+  ok(await row.isVisible() && (await row.textContent()).includes('$1,395.00') && (await row.textContent()).includes('Sent'), 'list shows saved estimate, total and status');
 
   // Delete
   await row.click(); await p.waitForTimeout(700);
@@ -102,7 +102,7 @@ const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
   // Mobile editor
   await p.setViewportSize({ width: 390, height: 844 });
   await p.goto(BASE + '#/price-sheet/estimates/new'); await p.waitForTimeout(800);
-  await p.getByRole('button', { name: /^Full truck load \$/ }).click(); await p.getByRole('button', { name: /^Extra labor \$/ }).click();
+  await p.getByRole('button', { name: /^20-yard dumpster \(arranged\) \$/ }).click(); await p.getByRole('button', { name: /^Clean-out crew labor \$/ }).click();
   console.log('mobile overflow', await p.evaluate(() => document.documentElement.scrollWidth - innerWidth));
   await p.screenshot({ path: S + '/shots/p2-mobile.png', fullPage: true });
   console.log('errors', errs);

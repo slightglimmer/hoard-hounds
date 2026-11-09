@@ -47,7 +47,7 @@ const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
   await p.getByLabel('Notes for the crew (optional)').fill('Lockbox code from agent');
   await p.getByRole('button', { name: 'Add a cost' }).click(); await p.waitForTimeout(250);
   ok((await dialog.getByLabel('What was it for?').inputValue()) !== '', 'cost defaults to a category');
-  await dialog.getByLabel('What was it for?').selectOption({ label: 'Truck rental' });
+  await dialog.getByLabel('What was it for?').selectOption({ label: 'Dumpster rental' });
   await dialog.getByLabel('Amount').fill('129');
   await dialog.getByRole('button', { name: 'Add cost' }).click(); await p.waitForTimeout(700);
   sum = await summary();
@@ -82,7 +82,7 @@ const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
 
   // Job cost appears in Expenses (bookkeeping)
   await p.goto(BASE + '#/expenses'); await p.waitForTimeout(800);
-  await p.getByPlaceholder('Search').fill('Truck rental'); await p.waitForTimeout(200);
+  await p.getByPlaceholder('Search').fill('Dumpster rental'); await p.waitForTimeout(200);
   ok((await p.locator('main ul li button[aria-label*="$129.00"]').count()) >= 1, 'job cost also shows in Expenses');
 
   // Estimate -> job

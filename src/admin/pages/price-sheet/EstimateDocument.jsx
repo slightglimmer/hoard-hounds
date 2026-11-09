@@ -3,7 +3,7 @@ import { LogoMark } from '../../../components/Logo.jsx';
 import { SITE } from '../../../config/site.js';
 import { formatDate } from '../../lib/dates.js';
 import { formatCents } from '../../lib/money.js';
-import { computeTotals, lineCents, minimumApplies, quantityLabel } from '../../lib/estimate.js';
+import { allowanceLines, computeTotals, lineCents, minimumApplies, quantityLabel } from '../../lib/estimate.js';
 
 // The customer-facing estimate, in the Hoard Hounds brand colors. It's hidden on
 // screen and is the only thing that prints (see .print-doc in admin.css).
@@ -84,8 +84,30 @@ export default function EstimateDocument({ estimate }) {
           <span>Estimated total</span>
           <span>{formatCents(total)}</span>
         </p>
-        {deposit > 0 && <p className="flex justify-between font-semibold"><span>Deposit to book</span><span>{formatCents(deposit)}</span></p>}
+        {deposit > 0 && (
+          <>
+            <p className="flex justify-between font-semibold"><span>Deposit to book</span><span>{formatCents(deposit)}</span></p>
+            <p className="flex justify-between"><span>Balance after deposit</span><span>{formatCents(Math.max(0, total - deposit))}</span></p>
+            <p className="text-right text-xs text-[#292929]/70">The deposit is credited toward the total.</p>
+          </>
+        )}
       </div>
+
+      {estimate.scope_of_work && (
+        <section className="mt-6">
+          <p className="text-xs font-bold tracking-[0.18em] text-[#243b32]/70 uppercase">Scope of work</p>
+          <p className="mt-1 whitespace-pre-line">{estimate.scope_of_work}</p>
+        </section>
+      )}
+      {allowanceLines(estimate).length > 0 && (
+        <section className="mt-6">
+          <p className="text-xs font-bold tracking-[0.18em] text-[#243b32]/70 uppercase">Dumpster allowance</p>
+          <ul className="mt-1 list-disc pl-5">
+            {allowanceLines(estimate).map((l) => <li key={l}>{l}</li>)}
+          </ul>
+        </section>
+      )}
+      {estimate.overage_terms && <p className="mt-3 text-sm whitespace-pre-line">{estimate.overage_terms}</p>}
 
       {estimate.notes && (
         <section className="mt-6">

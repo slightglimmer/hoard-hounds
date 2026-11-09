@@ -42,7 +42,7 @@ const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
   ok(await p.getByRole('button', { name: /Edit Test dumpster fee, \$99\.10/ }).isVisible(), 'edit saved');
 
   // Search + category filter
-  await p.getByPlaceholder('Search').fill('dumpster'); await p.waitForTimeout(200);
+  await p.getByPlaceholder('Search').fill('Test dumpster'); await p.waitForTimeout(200);
   ok((await p.locator('main ul li button[aria-label^="Edit"]').count()) === 1, 'search narrows to 1 row');
   await p.getByPlaceholder('Search').fill('');
 

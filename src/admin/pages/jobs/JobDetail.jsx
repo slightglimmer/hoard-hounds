@@ -9,6 +9,8 @@ import { JOB_STATUSES, PAYMENT_KINDS, jobMoney, jobStatus } from '../../lib/jobs
 import { CustomerFields, JobCostForm, PaymentForm, blankCustomer, customerPayload } from './JobForms.jsx';
 import { TimeEntryForm } from '../employees/EmployeeForms.jsx';
 import OnlinePayments from './OnlinePayments.jsx';
+import DumpsterRentals from './DumpsterRentals.jsx';
+import { computeCosting } from '../../lib/costing.js';
 import { TIME_STATUSES, wageCents } from '../../lib/employees.js';
 
 const NEW_CUSTOMER = '__new__';
@@ -26,6 +28,37 @@ const optionalMoney = (v) => {
   const parsed = parseAmount(s);
   return parsed ? { ok: true, value: parsed } : { ok: false };
 };
+
+// Estimated cost from the accepted (or latest) estimate's private job costing,
+// next to what's actually been recorded. Estimates never feed into profit.
+function PlannedVsActual({ estimates, actualCents }) {
+  const [planned, setPlanned] = useState(null);
+  const pick = estimates.find((e) => e.status === 'accepted') || estimates[estimates.length - 1];
+  useEffect(() => {
+    let cancelled = false;
+    setPlanned(null);
+    if (!pick) return undefined;
+    api.getEstimateCosting(pick.id)
+      .then((c) => !cancelled && c && setPlanned({ number: pick.number, cost: computeCosting(c).cost }))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [pick?.id, pick?.number]);
+  if (!planned) return null;
+  const diff = actualCents - planned.cost;
+  return (
+    <div className="rounded-2xl bg-blush/50 px-3 py-2.5 text-xs">
+      <p className="flex justify-between"><span className="text-muted">Estimated cost (estimate #{planned.number})</span><span className="tabular font-semibold">{formatCents(planned.cost)}</span></p>
+      <p className="mt-1 flex justify-between"><span className="text-muted">Actual costs + labor so far</span><span className="tabular font-semibold">{formatCents(actualCents)}</span></p>
+      {actualCents > 0 && (
+        <p className={`mt-1 text-right ${diff > 0 ? 'text-danger' : 'text-sage-deep'}`}>
+          {diff > 0 ? `${formatCents(diff)} over the estimate` : `${formatCents(-diff)} under the estimate`}
+        </p>
+      )}
+    </div>
+  );
+}
 
 function MoneyRow({ label, cents, strong, tone = '', hint }) {
   return (
@@ -362,6 +395,8 @@ export default function JobDetail({ id }) {
                 />
               </section>
 
+              <DumpsterRentals job={job} categories={categories} onChanged={() => load({ keepEdits: true })} />
+
               {/* Costs */}
               <section className="card animate-rise p-5 sm:p-6" style={{ animationDelay: '160ms' }} aria-labelledby="job-costs">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -388,7 +423,7 @@ export default function JobDetail({ id }) {
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-sm text-muted">Add dump fees, truck rental, contract labor and anything else this job cost.</p>
+                  <p className="mt-2 text-sm text-muted">Add the dumpster rental, permits, supplies, contract labor and anything else this job cost.</p>
                 )}
               </section>
 
@@ -479,6 +514,7 @@ export default function JobDetail({ id }) {
               )}
             </dl>
           )}
+          {money && data.estimates?.length > 0 && <PlannedVsActual estimates={data.estimates} actualCents={money.costs + money.labor} />}
           <div className="grid gap-2">
             <button type="button" className="btn-primary w-full" onClick={save} disabled={busy}>
               <AdminIcon name="check" className="h-4 w-4" strokeWidth={2.4} />

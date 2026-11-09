@@ -24,6 +24,12 @@ export default function QuoteTemplate({ open, onClose }) {
                 default_terms: s.default_terms ?? '',
                 default_valid_days: String(s.default_valid_days ?? 30),
                 default_deposit: s.default_deposit ? String(Number(s.default_deposit)) : '',
+                // Added by the inquiries & dumpster update; missing before it's run.
+                phase1: 'default_overage_terms' in s,
+                default_overage_terms: s.default_overage_terms ?? '',
+                default_labor_rate: s.default_labor_rate ? String(Number(s.default_labor_rate)) : '',
+                default_contingency_pct: s.default_contingency_pct ? String(Number(s.default_contingency_pct)) : '',
+                default_target_margin_pct: s.default_target_margin_pct ? String(Number(s.default_target_margin_pct)) : '',
               }
             : false,
         ),
@@ -44,6 +50,17 @@ export default function QuoteTemplate({ open, onClose }) {
     if (!Number.isInteger(days) || days < 1 || days > 365) found.default_valid_days = 'Enter a number of days from 1 to 365.';
     const deposit = form.default_deposit.trim() ? parseAmount(form.default_deposit) : null;
     if (form.default_deposit.trim() && !deposit) found.default_deposit = 'Enter an amount, or leave it empty.';
+    const optionalNumber = (v, max) => {
+      const t = v.trim().replace(/[$%,]/g, '');
+      if (!t) return null;
+      return /^\d+(\.\d{1,2})?$/.test(t) && Number(t) <= max ? Number(t) : NaN;
+    };
+    const labor = form.phase1 ? optionalNumber(form.default_labor_rate, 10000) : null;
+    const contingency = form.phase1 ? optionalNumber(form.default_contingency_pct, 100) : null;
+    const margin = form.phase1 ? optionalNumber(form.default_target_margin_pct, 90) : null;
+    if (Number.isNaN(labor)) found.default_labor_rate = 'Enter an hourly amount, or leave it empty.';
+    if (Number.isNaN(contingency)) found.default_contingency_pct = 'Use 0 to 100%.';
+    if (Number.isNaN(margin)) found.default_target_margin_pct = 'Use 0 to 90%.';
     setErrors(found);
     if (Object.keys(found).length) return;
     setBusy(true);
@@ -53,6 +70,14 @@ export default function QuoteTemplate({ open, onClose }) {
         default_terms: form.default_terms.trim(),
         default_valid_days: days,
         default_deposit: deposit,
+        ...(form.phase1
+          ? {
+              default_overage_terms: form.default_overage_terms.trim(),
+              default_labor_rate: labor,
+              default_contingency_pct: contingency,
+              default_target_margin_pct: margin,
+            }
+          : {}),
       });
       notify('Quote template saved');
       onClose();
@@ -98,7 +123,7 @@ export default function QuoteTemplate({ open, onClose }) {
             <Field label="Quotes are good for" error={errors.default_valid_days} hint="Days, from the estimate date.">
               {(p) => <input {...p} inputMode="numeric" className="input tabular" value={form.default_valid_days} onChange={set('default_valid_days')} />}
             </Field>
-            <Field label="Usual deposit" optional error={errors.default_deposit} hint="Leave empty for no deposit.">
+            <Field label="Usual deposit" optional error={errors.default_deposit} hint="Only a fallback: the job costing suggests a deposit from each job’s dumpster cost.">
               {(p) => (
                 <div className="relative">
                   <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted">$</span>
@@ -107,6 +132,25 @@ export default function QuoteTemplate({ open, onClose }) {
               )}
             </Field>
           </div>
+          {form.phase1 && (
+            <>
+              <Field label="Additional charges wording" optional hint="Goes on new estimates: how extra dumpster charges are handled and approved.">
+                {(p) => <textarea {...p} rows={4} className="input resize-y text-sm" value={form.default_overage_terms} onChange={set('default_overage_terms')} />}
+              </Field>
+              <p className="pt-1 text-sm font-semibold">Job costing starting values <span className="font-normal text-muted">(private)</span></p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Field label="Labor cost per hour" optional error={errors.default_labor_rate}>
+                  {(p) => <input {...p} inputMode="decimal" className="input tabular" placeholder="$" value={form.default_labor_rate} onChange={set('default_labor_rate')} />}
+                </Field>
+                <Field label="Contingency %" optional error={errors.default_contingency_pct}>
+                  {(p) => <input {...p} inputMode="decimal" className="input tabular" placeholder="%" value={form.default_contingency_pct} onChange={set('default_contingency_pct')} />}
+                </Field>
+                <Field label="Target margin %" optional error={errors.default_target_margin_pct}>
+                  {(p) => <input {...p} inputMode="decimal" className="input tabular" placeholder="%" value={form.default_target_margin_pct} onChange={set('default_target_margin_pct')} />}
+                </Field>
+              </div>
+            </>
+          )}
         </form>
       )}
     </Modal>

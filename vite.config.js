@@ -13,7 +13,8 @@ function adminCsp(env) {
     "script-src 'self'",
     "style-src 'self' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
-    "img-src 'self' data: blob:",
+    // Inquiry photos are shown through short-lived signed links from Supabase Storage.
+    `img-src 'self' data: blob:${supabase ? ` ${supabase}` : ''}`,
     `connect-src 'self'${supabase ? ` ${supabase} ${supabase.replace(/^http/, 'ws')}` : ''}`,
     "object-src 'none'",
     "base-uri 'self'",

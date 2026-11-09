@@ -9,6 +9,8 @@ import { DEFAULT_TERMS, STATUSES, UNITS, computeTotals, estimateText, lineCents,
 import EstimateDocument from './EstimateDocument.jsx';
 import { priceLabel } from './PricesPanel.jsx';
 import QuoteLink from './QuoteLink.jsx';
+import CostingPanel from './CostingPanel.jsx';
+import { COSTING_FIELDS, parseNumber, validateCosting } from '../../lib/costing.js';
 
 let keySeq = 0;
 const newKey = () => `line-${++keySeq}`;
@@ -22,6 +24,9 @@ const blankEstimate = () => ({
   customer_name: '', customer_phone: '', customer_email: '', property_address: '',
   status: 'draft', estimate_date: todayISO(), valid_until: plusDays(todayISO(), 30),
   discount_type: '', discount_value: '', deposit_amount: '', notes: '', terms: DEFAULT_TERMS, lines: [],
+  // Inquiries & dumpster update
+  inquiry_id: '', scope_of_work: '', dumpster_count: '', dumpster_size_yards: '', dumpster_weight_allowance_tons: '',
+  dumpster_rental_days: '', overage_rate_per_ton: '', extra_day_rate: '', overage_terms: '',
 });
 
 // Accepts "12", "12.5", "$1,200.00". Returns a number, or null if it isn't one.
@@ -77,26 +82,47 @@ export default function EstimateEditor({ id }) {
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [dirty, setDirty] = useState(false);
+  // Scope, dumpster allowance and costing need the inquiries & dumpster database update.
+  const [phase1, setPhase1] = useState(false);
+  const [costing, setCosting] = useState(() => Object.fromEntries(COSTING_FIELDS.map((f) => [f, ''])));
+  const [costingSaved, setCostingSaved] = useState(false);
+  const [costingDirty, setCostingDirty] = useState(false);
   const formErrorRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [items, row, settings] = await Promise.all([
+        const [items, row, settings, features] = await Promise.all([
           api.listPriceItems(),
           isNew ? null : api.getEstimate(id),
-          isNew ? api.getQuoteSettings().catch(() => null) : null,
+          api.getQuoteSettings().catch(() => null),
+          api.features().catch(() => ({ inquiries: false })),
         ]);
+        const savedCosting = row && features.inquiries ? await api.getEstimateCosting(row.id).catch(() => null) : null;
         if (cancelled) return;
         setPrices(items);
+        setPhase1(features.inquiries);
         // New estimates start from your quote template (Estimates → Quote template).
-        if (settings) {
+        if (settings && isNew) {
           setEst((e) => ({
             ...e,
             terms: settings.default_terms ?? e.terms,
             valid_until: plusDays(e.estimate_date, settings.default_valid_days || 30),
             deposit_amount: settings.default_deposit ? String(Number(settings.default_deposit)) : '',
+            overage_terms: settings.default_overage_terms ?? '',
+          }));
+        }
+        const asText = (v) => (v === null || v === undefined || v === '' ? '' : String(Number(v)));
+        if (savedCosting) {
+          setCosting(Object.fromEntries(COSTING_FIELDS.map((f) => [f, asText(savedCosting[f])])));
+          setCostingSaved(true);
+        } else if (settings) {
+          setCosting((c) => ({
+            ...c,
+            labor_rate: asText(settings.default_labor_rate),
+            contingency_pct: asText(settings.default_contingency_pct),
+            target_margin_pct: asText(settings.default_target_margin_pct),
           }));
         }
         if (row) {
@@ -176,6 +202,18 @@ export default function EstimateEditor({ id }) {
     if (est.discount_type === 'percent' && num(est.discount_value) > 100) found.discount_value = 'A percent discount can’t be over 100.';
     if (String(est.deposit_amount).trim() && num(est.deposit_amount) === null) found.deposit_amount = 'Enter an amount, or leave it empty.';
     if (est.valid_until && est.valid_until < est.estimate_date) found.valid_until = 'This should be after the estimate date.';
+    if (num(est.deposit_amount) > 0 && Math.round(num(est.deposit_amount) * 100) > totals.total) {
+      found.deposit_amount = 'The deposit can’t be more than the total. It’s credited toward the total, not added to it.';
+    }
+    if (phase1) {
+      const whole = (v) => !String(v).trim() || /^\d+$/.test(String(v).trim());
+      if (!whole(est.dumpster_count) || Number(est.dumpster_count) > 20) found.dumpster_count = 'Enter a whole number of dumpsters (1–20).';
+      if (!whole(est.dumpster_rental_days) || Number(est.dumpster_rental_days) > 365) found.dumpster_rental_days = 'Enter a whole number of days.';
+      for (const [key, label] of [['dumpster_size_yards', 'size'], ['dumpster_weight_allowance_tons', 'weight allowance'], ['overage_rate_per_ton', 'overage rate'], ['extra_day_rate', 'extra-day rate']]) {
+        if (String(est[key]).trim() && num(est[key]) === null) found[key] = `Enter the ${label} as a number, or leave it empty.`;
+      }
+      if (costingDirty || costingSaved) Object.assign(found, Object.fromEntries(Object.entries(validateCosting(costing)).map(([k, v]) => [`costing_${k}`, `Job costing: ${v}`])));
+    }
     setErrors(found);
     if (Object.keys(found).length) {
       requestAnimationFrame(() => formErrorRef.current?.focus());
@@ -203,7 +241,28 @@ export default function EstimateEditor({ id }) {
         deposit_amount: num(est.deposit_amount) || null,
         notes: est.notes.trim(),
         terms: est.terms.trim(),
+        ...(phase1
+          ? {
+              inquiry_id: est.inquiry_id || null,
+              scope_of_work: est.scope_of_work.trim(),
+              dumpster_count: est.dumpster_count ? Number(est.dumpster_count) : null,
+              dumpster_size_yards: num(est.dumpster_size_yards) || null,
+              dumpster_weight_allowance_tons: num(est.dumpster_weight_allowance_tons) || null,
+              dumpster_rental_days: est.dumpster_rental_days ? Number(est.dumpster_rental_days) : null,
+              overage_rate_per_ton: num(est.overage_rate_per_ton),
+              extra_day_rate: num(est.extra_day_rate),
+              overage_terms: est.overage_terms.trim(),
+            }
+          : {}),
       });
+      if (phase1 && (costingDirty || costingSaved)) {
+        await api.saveEstimateCosting({
+          estimate_id: row.id,
+          ...Object.fromEntries(COSTING_FIELDS.map((f) => [f, parseNumber(costing[f]) ?? 0])),
+        });
+        setCostingSaved(true);
+        setCostingDirty(false);
+      }
       setSaved(row);
       setDirty(false);
       notify(`Estimate #${row.number} saved`);
@@ -297,6 +356,12 @@ export default function EstimateEditor({ id }) {
         <h2 className="font-display text-2xl font-semibold">{saved ? `Estimate #${saved.number}` : 'New estimate'}</h2>
         {saved?.is_demo && <DemoPill />}
         {dirty && <span className="pill bg-gold/20 text-gold-deep">Unsaved changes</span>}
+        {est.inquiry_id && (
+          <a href={`#/inquiries/${est.inquiry_id}`} className="pill bg-blush text-rose-ink underline-offset-2 hover:underline">
+            <AdminIcon name="inbox" className="mr-1 h-3.5 w-3.5" />
+            From a website request
+          </a>
+        )}
       </div>
 
       {errorList.length > 0 && (
@@ -407,6 +472,50 @@ export default function EstimateEditor({ id }) {
             </button>
           </section>
 
+          {/* Scope and dumpster allowance (shown to the customer) */}
+          {phase1 && (
+            <section className="card animate-rise p-5 sm:p-6" style={{ animationDelay: '90ms' }} aria-labelledby="scope-title">
+              <h3 id="scope-title" className="font-display text-xl font-semibold">Scope & dumpster allowance</h3>
+              <p className="mt-1 text-sm text-muted">Shown on the estimate and the customer’s quote link, so they know exactly what’s included.</p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <Field label="Scope of work" optional className="sm:col-span-2" hint="What you’ll do, in plain words. Mention anything set aside or left behind.">
+                  {(p) => <textarea {...p} rows={3} className="input resize-y" placeholder="e.g. Clear all rooms, basement and garage. Set aside photo albums and papers for the family." value={est.scope_of_work} onChange={set('scope_of_work')} />}
+                </Field>
+                <Field label="Number of dumpsters" optional error={errors.dumpster_count}>
+                  {(p) => <input {...p} inputMode="numeric" className="input tabular" placeholder="1" value={est.dumpster_count} onChange={set('dumpster_count')} />}
+                </Field>
+                <Field label="Dumpster size (cubic yards)" optional error={errors.dumpster_size_yards}>
+                  {(p) => <input {...p} inputMode="decimal" className="input tabular" placeholder="e.g. 20" value={est.dumpster_size_yards} onChange={set('dumpster_size_yards')} />}
+                </Field>
+                <Field label="Weight allowance included (tons)" optional error={errors.dumpster_weight_allowance_tons} hint="From the dumpster company’s terms.">
+                  {(p) => <input {...p} inputMode="decimal" className="input tabular" placeholder="e.g. 3" value={est.dumpster_weight_allowance_tons} onChange={set('dumpster_weight_allowance_tons')} />}
+                </Field>
+                <Field label="Rental days included" optional error={errors.dumpster_rental_days}>
+                  {(p) => <input {...p} inputMode="numeric" className="input tabular" placeholder="e.g. 7" value={est.dumpster_rental_days} onChange={set('dumpster_rental_days')} />}
+                </Field>
+                <Field label="Provider’s overweight rate (per ton)" optional error={errors.overage_rate_per_ton} hint="Disclosed only. Never charged automatically.">
+                  {(p) => (
+                    <div className="relative">
+                      <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted">$</span>
+                      <input {...p} inputMode="decimal" className="input pl-8 tabular" value={est.overage_rate_per_ton} onChange={set('overage_rate_per_ton')} />
+                    </div>
+                  )}
+                </Field>
+                <Field label="Provider’s extra-day rate" optional error={errors.extra_day_rate} hint="Disclosed only. Never charged automatically.">
+                  {(p) => (
+                    <div className="relative">
+                      <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted">$</span>
+                      <input {...p} inputMode="decimal" className="input pl-8 tabular" value={est.extra_day_rate} onChange={set('extra_day_rate')} />
+                    </div>
+                  )}
+                </Field>
+                <Field label="Additional charges" optional className="sm:col-span-2" hint="How extra dumpster charges are handled and approved. Edit the default in Quote template.">
+                  {(p) => <textarea {...p} rows={3} className="input resize-y text-sm" value={est.overage_terms} onChange={set('overage_terms')} />}
+                </Field>
+              </div>
+            </section>
+          )}
+
           {/* Details */}
           <section className="card animate-rise p-5 sm:p-6" style={{ animationDelay: '120ms' }} aria-labelledby="details-title">
             <h3 id="details-title" className="font-display text-xl font-semibold">Details</h3>
@@ -433,7 +542,7 @@ export default function EstimateEditor({ id }) {
               ) : (
                 <div className="hidden sm:block" />
               )}
-              <Field label="Deposit to book" optional error={errors.deposit_amount} hint="Shown on the estimate if you ask for one.">
+              <Field label="Deposit to book" optional error={errors.deposit_amount} hint="Usually the dumpster rental cost. It’s credited toward the total, not added to it.">
                 {(p) => (
                   <div className="relative">
                     <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted">$</span>
@@ -456,6 +565,27 @@ export default function EstimateEditor({ id }) {
               </Field>
             </div>
           </section>
+
+          {phase1 && (
+            <CostingPanel
+              value={costing}
+              errors={validateCosting(costing)}
+              onChange={(patch) => {
+                setCosting((c) => ({ ...c, ...patch }));
+                setCostingDirty(true);
+                setDirty(true);
+              }}
+              totalCents={totals.total}
+              depositCents={Math.round((num(est.deposit_amount) || 0) * 100)}
+              hasLines={est.lines.length > 0}
+              onUseDeposit={(cents) => update({ deposit_amount: (cents / 100).toFixed(2) })}
+              onUsePrice={(cents) =>
+                update({
+                  lines: [{ key: newKey(), price_item_id: null, name: 'Clean-out: labor, dumpster and disposal', description: '', unit: 'flat', unit_price: (cents / 100).toFixed(2), quantity: '1', minimum_charge: '' }],
+                })
+              }
+            />
+          )}
         </div>
 
         {/* Running total */}
@@ -470,7 +600,10 @@ export default function EstimateEditor({ id }) {
               <dd className="font-display text-3xl font-semibold text-rose-ink" aria-live="polite">{formatCents(totals.total)}</dd>
             </div>
             {num(est.deposit_amount) > 0 && (
-              <div className="flex justify-between"><dt className="text-muted">Deposit to book</dt><dd className="font-semibold">{formatCents(Math.round(num(est.deposit_amount) * 100))}</dd></div>
+              <>
+                <div className="flex justify-between"><dt className="text-muted">Deposit to book</dt><dd className="font-semibold">{formatCents(Math.round(num(est.deposit_amount) * 100))}</dd></div>
+                <div className="flex justify-between"><dt className="text-muted">Balance after deposit</dt><dd className="font-semibold">{formatCents(Math.max(0, totals.total - Math.round(num(est.deposit_amount) * 100)))}</dd></div>
+              </>
             )}
           </dl>
           <div className="grid gap-2">

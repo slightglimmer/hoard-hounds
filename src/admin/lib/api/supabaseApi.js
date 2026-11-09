@@ -43,8 +43,22 @@ const PRICE_FIELDS = ['name', 'description', 'unit', 'unit_price', 'minimum_char
 const ESTIMATE_FIELDS = [
   'customer_name', 'customer_email', 'customer_phone', 'property_address', 'status', 'estimate_date', 'valid_until',
   'line_items', 'discount_type', 'discount_value', 'deposit_amount', 'notes', 'terms', 'customer_id', 'job_id', 'share_token',
+  // Inquiries & dumpster update (migration 6)
+  'inquiry_id', 'scope_of_work', 'dumpster_count', 'dumpster_size_yards', 'dumpster_weight_allowance_tons', 'dumpster_rental_days',
+  'overage_rate_per_ton', 'extra_day_rate', 'overage_terms',
 ];
-const SETTINGS_FIELDS = ['quote_message', 'default_terms', 'default_valid_days', 'default_deposit'];
+const SETTINGS_FIELDS = [
+  'quote_message', 'default_terms', 'default_valid_days', 'default_deposit',
+  'default_overage_terms', 'default_labor_rate', 'default_contingency_pct', 'default_target_margin_pct',
+];
+const INQUIRY_FIELDS = ['status', 'admin_notes', 'customer_id', 'job_id'];
+const COSTING_FIELDS = ['estimate_id', 'dumpster_cost', 'labor_hours', 'labor_rate', 'other_costs', 'contingency_pct', 'target_margin_pct', 'notes'];
+const DUMPSTER_FIELDS = [
+  'job_id', 'provider_name', 'provider_contact', 'size_yards', 'base_cost', 'included_days', 'weight_allowance_tons', 'overage_rate_per_ton',
+  'extra_day_rate', 'delivery_date', 'expected_pickup_date', 'actual_pickup_date', 'placement_notes', 'permit_required', 'permit_notes',
+  'confirmation_number', 'actual_overage_charges', 'base_expense_id', 'overage_expense_id', 'notes',
+];
+const PHOTO_BUCKET = 'inquiry-photos';
 const NOT_SET_UP = ['42P01', 'PGRST205', '42703', 'PGRST204'];
 const CUSTOMER_FIELDS = ['full_name', 'company', 'customer_type', 'email', 'phone', 'notes'];
 const JOB_FIELDS = ['customer_id', 'title', 'property_address', 'service_type', 'status', 'scheduled_date', 'completed_date', 'crew_notes'];
@@ -78,7 +92,22 @@ async function callPayments(body) {
   throw new Error(message || 'Online payments aren’t set up yet. See “Online payments” in docs/ADMIN_SETUP.md.');
 }
 
+// Whether the inquiries & dumpster database update (migration 6) has been run.
+let featuresPromise;
+function features() {
+  featuresPromise ??= supabase
+    .from('inquiries')
+    .select('id')
+    .limit(1)
+    .then(({ error }) => {
+      if (error) featuresPromise = undefined; // not set up yet (or offline): check again next time
+      return { inquiries: !error };
+    });
+  return featuresPromise;
+}
+
 export const supabaseApi = {
+  features,
   listCategories: () =>
     fetchAll(() => supabase.from('expense_categories').select('*').order('sort_order').order('name').order('id')),
   saveCategory: (row) => save('expense_categories', CATEGORY_FIELDS, row),
@@ -224,6 +253,78 @@ export const supabaseApi = {
   },
   saveQuoteSettings: async (row) =>
     unwrap(await supabase.from('business_settings').upsert({ id: 1, ...pick(row, SETTINGS_FIELDS) }).select().single()),
+
+  // ---- Inquiries (website quote requests) ----
+  async listInquiries() {
+    const { data, error } = await supabase
+      .from('inquiries')
+      .select('id, number, status, full_name, cleanout_type, property_address, created_at, photo_count, photos_failed, preferred_date, date_is_deadline, is_demo')
+      .order('created_at', { ascending: false })
+      .order('id');
+    if (error) {
+      if (NOT_SET_UP.includes(error.code)) return null;
+      throw friendlyError(error);
+    }
+    return data;
+  },
+  async countNewInquiries() {
+    const { count, error } = await supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'new');
+    return error ? 0 : count ?? 0;
+  },
+  async getInquiry(id) {
+    const [inquiry, photos, estimates] = await Promise.all([
+      supabase.from('inquiries').select('*').eq('id', id).single().then(unwrap),
+      fetchAll(() => supabase.from('inquiry_photos').select('*').eq('inquiry_id', id).order('created_at').order('id')),
+      fetchAll(() => supabase.from('estimates').select('id, number, status, total').eq('inquiry_id', id).order('number')),
+    ]);
+    // Private bucket: short-lived signed links, only for a signed-in admin.
+    let urls = [];
+    if (photos.length) {
+      const { data, error } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(photos.map((p) => p.storage_path), 3600);
+      if (!error) urls = data;
+    }
+    return { inquiry, estimates, photos: photos.map((p, i) => ({ ...p, url: urls[i]?.signedUrl || null })) };
+  },
+  saveInquiry: (row) => save('inquiries', INQUIRY_FIELDS, row),
+  async deleteInquiry(id) {
+    const photos = await fetchAll(() => supabase.from('inquiry_photos').select('storage_path').eq('inquiry_id', id).order('storage_path'));
+    if (photos.length) {
+      const { error } = await supabase.storage.from(PHOTO_BUCKET).remove(photos.map((p) => p.storage_path));
+      if (error) throw new Error('Couldn’t delete the photos. Please try again.');
+    }
+    await remove('inquiries', id);
+  },
+
+  // ---- Internal job costing for estimates (never shown to customers) ----
+  async getEstimateCosting(estimateId) {
+    const { data, error } = await supabase.from('estimate_costing').select('*').eq('estimate_id', estimateId).maybeSingle();
+    if (error) {
+      if (NOT_SET_UP.includes(error.code)) return null;
+      throw friendlyError(error);
+    }
+    return data;
+  },
+  saveEstimateCosting: async (row) =>
+    unwrap(await supabase.from('estimate_costing').upsert(pick(row, COSTING_FIELDS), { onConflict: 'estimate_id' }).select().single()),
+
+  // ---- Dumpster rentals on a job ----
+  async listDumpsters(jobId) {
+    const { data, error } = await supabase.from('dumpster_rentals').select('*').eq('job_id', jobId).order('delivery_date', { nullsFirst: false }).order('created_at');
+    if (error) {
+      if (NOT_SET_UP.includes(error.code)) return null;
+      throw friendlyError(error);
+    }
+    return data;
+  },
+  // Providers you've used before (for the name suggestions).
+  async listDumpsterProviders() {
+    const rows = await fetchAll(() => supabase.from('dumpster_rentals').select('provider_name, provider_contact, created_at').not('provider_name', 'is', null).order('created_at', { ascending: false }).order('id'));
+    const seen = new Map();
+    for (const r of rows) if (!seen.has(r.provider_name)) seen.set(r.provider_name, r.provider_contact);
+    return [...seen].map(([name, contact]) => ({ name, contact }));
+  },
+  saveDumpster: (row) => save('dumpster_rentals', DUMPSTER_FIELDS, row),
+  deleteDumpster: (id) => remove('dumpster_rentals', id),
 
   unassignEmployee: async (jobId, employeeId) =>
     unwrap(await supabase.from('job_assignments').delete().eq('job_id', jobId).eq('employee_id', employeeId)),

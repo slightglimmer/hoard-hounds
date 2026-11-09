@@ -80,9 +80,37 @@ export function estimateText(est, site) {
     lines.push(`Discount${est.discount_type === 'percent' ? ` (${Number(est.discount_value)}%)` : ''}: −${formatCents(discount)}`);
   }
   lines.push(`Estimated total: ${formatCents(total)}`);
-  if (Number(est.deposit_amount) > 0) lines.push(`Deposit to book: ${formatCents(cents(est.deposit_amount))}`);
+  if (Number(est.deposit_amount) > 0) {
+    lines.push(`Deposit to book: ${formatCents(cents(est.deposit_amount))} (credited toward the total)`);
+    lines.push(`Balance after deposit: ${formatCents(Math.max(0, total - cents(est.deposit_amount)))}`);
+  }
+  if (est.scope_of_work) lines.push('', `Scope of work: ${est.scope_of_work}`);
+  const allowance = allowanceLines(est);
+  if (allowance.length) lines.push('', 'Dumpster allowance:', ...allowance.map((l) => `• ${l}`));
+  if (est.overage_terms) lines.push('', est.overage_terms);
   if (est.notes) lines.push('', est.notes);
   if (est.terms) lines.push('', est.terms);
   lines.push('', `Questions? Call or text ${site.phoneDisplay} or email ${site.email}.`);
   return lines.join('\n');
+}
+
+// The dumpster allowance in plain sentences, for the printed estimate, the text copy
+// and the customer's quote page. Empty when nothing is filled in.
+export function allowanceLines(est) {
+  const lines = [];
+  const n = Number(est.dumpster_count) || (Number(est.dumpster_size_yards) ? 1 : 0);
+  const size = Number(est.dumpster_size_yards);
+  if (n || size) lines.push(`${n || 1} × ${size ? `${size}-yard ` : ''}dumpster${(n || 1) > 1 ? 's' : ''}, including delivery, pickup and disposal`);
+  const tons = Number(est.dumpster_weight_allowance_tons);
+  if (tons) lines.push(`Up to ${tons} ton${tons === 1 ? '' : 's'} of weight included${(n || 1) > 1 ? ' per dumpster' : ''}`);
+  const days = Number(est.dumpster_rental_days);
+  if (days) lines.push(`${days} rental day${days === 1 ? '' : 's'} included`);
+  const perTon = est.overage_rate_per_ton === null || est.overage_rate_per_ton === undefined || est.overage_rate_per_ton === '' ? null : Number(est.overage_rate_per_ton);
+  const perDay = est.extra_day_rate === null || est.extra_day_rate === undefined || est.extra_day_rate === '' ? null : Number(est.extra_day_rate);
+  const rates = [
+    perTon !== null && !Number.isNaN(perTon) && `${formatCents(Math.round(perTon * 100))} per extra ton`,
+    perDay !== null && !Number.isNaN(perDay) && `${formatCents(Math.round(perDay * 100))} per extra day`,
+  ].filter(Boolean);
+  if (rates.length) lines.push(`If needed, the dumpster company’s rates are ${rates.join(' and ')} (only billed with your approval)`);
+  return lines;
 }

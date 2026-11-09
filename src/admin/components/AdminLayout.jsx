@@ -9,6 +9,7 @@ import { MODE } from '../lib/supabase.js';
 
 export const NAV = [
   { path: '/overview', label: 'Overview', icon: 'overview' },
+  { path: '/inquiries', label: 'Inquiries', icon: 'inbox', badge: 'newInquiries' },
   { path: '/expenses', label: 'Expenses', icon: 'receipt' },
   { path: '/price-sheet', label: 'Price Sheet', icon: 'tag' },
   { path: '/jobs', label: 'Jobs', icon: 'truck' },
@@ -30,7 +31,21 @@ function Brand() {
   );
 }
 
+// Number of new website requests, refreshed whenever you change pages.
+function useBadges(route) {
+  const [badges, setBadges] = useState({});
+  useEffect(() => {
+    let cancelled = false;
+    api.countNewInquiries?.().then((n) => !cancelled && setBadges({ newInquiries: n })).catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [route]);
+  return badges;
+}
+
 function NavList({ route, onNavigate }) {
+  const badges = useBadges(route);
   return (
     <ul className="space-y-1">
       {NAV.map((item) => {
@@ -53,6 +68,9 @@ function NavList({ route, onNavigate }) {
                 <AdminIcon name={item.icon} className="h-[18px] w-[18px]" />
               </span>
               <span className="flex-1">{item.label}</span>
+              {item.badge && badges[item.badge] > 0 && (
+                <span className="pill bg-rose-deep text-white" aria-label={`${badges[item.badge]} new`}>{badges[item.badge]}</span>
+              )}
               {item.soon && <span className="pill bg-blush text-muted">Soon</span>}
             </a>
           </li>

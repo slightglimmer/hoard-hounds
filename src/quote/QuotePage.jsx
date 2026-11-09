@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Logo from '../components/Logo.jsx';
 import Icon from '../components/Icon.jsx';
 import { SITE } from '../config/site.js';
-import { computeTotals, lineCents, minimumApplies, quantityLabel } from '../admin/lib/estimate.js';
+import { allowanceLines, computeTotals, lineCents, minimumApplies, quantityLabel } from '../admin/lib/estimate.js';
 import { formatDate } from '../admin/lib/dates.js';
 import { formatCents, toCents } from '../admin/lib/money.js';
 import { DEMO_TOKEN, demoAccept, demoQuote, resetDemo } from './demoQuote.js';
@@ -157,7 +157,13 @@ function QuoteDetails({ quote }) {
           </>
         )}
         <Row label="Total" value={formatCents(total)} strong className="pt-1" />
-        {toCents(quote.deposit_amount) > 0 && <Row label="Deposit to book" value={formatCents(toCents(quote.deposit_amount))} />}
+        {toCents(quote.deposit_amount) > 0 && toCents(quote.received) === 0 && (
+          <>
+            <Row label="Deposit to book" value={formatCents(toCents(quote.deposit_amount))} />
+            <Row label="Balance after deposit" value={formatCents(Math.max(0, total - toCents(quote.deposit_amount)))} />
+            <p className="text-right text-xs text-charcoal/60">Your deposit is credited toward the total, not added to it.</p>
+          </>
+        )}
         {toCents(quote.received) > 0 && (
           <>
             <Row label="Paid so far" value={formatCents(toCents(quote.received))} />
@@ -166,6 +172,31 @@ function QuoteDetails({ quote }) {
         )}
       </dl>
 
+      {quote.scope_of_work && (
+        <div className="mt-6">
+          <h2 className="font-sans text-sm font-bold uppercase tracking-[0.14em] text-forest/80">Scope of work</h2>
+          <p className="mt-1 whitespace-pre-line text-charcoal/85">{quote.scope_of_work}</p>
+        </div>
+      )}
+      {allowanceLines(quote).length > 0 && (
+        <div className="mt-6 rounded-2xl bg-sage-light/60 p-4">
+          <h2 className="font-sans text-sm font-bold uppercase tracking-[0.14em] text-forest/80">Dumpster allowance included</h2>
+          <ul className="mt-2 space-y-1.5 text-charcoal/85">
+            {allowanceLines(quote).map((l) => (
+              <li key={l} className="flex gap-2">
+                <Icon name="check" className="mt-1 h-4 w-4 shrink-0 text-forest" />
+                <span>{l}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {quote.overage_terms && (
+        <div className="mt-4">
+          <h2 className="font-sans text-sm font-bold uppercase tracking-[0.14em] text-forest/80">Additional charges</h2>
+          <p className="mt-1 whitespace-pre-line text-sm text-charcoal/80">{quote.overage_terms}</p>
+        </div>
+      )}
       {quote.notes && (
         <div className="mt-6 rounded-2xl bg-cream p-4">
           <h2 className="font-sans text-sm font-bold uppercase tracking-[0.14em] text-forest/80">Notes</h2>

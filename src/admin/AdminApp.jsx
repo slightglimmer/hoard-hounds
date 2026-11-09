@@ -9,11 +9,13 @@ import PriceSheetPage from './pages/price-sheet/PriceSheetPage.jsx';
 import JobsPage from './pages/jobs/JobsPage.jsx';
 import EmployeesPage from './pages/employees/EmployeesPage.jsx';
 import ReportsPage from './pages/reports/ReportsPage.jsx';
+import InquiriesPage from './pages/inquiries/InquiriesPage.jsx';
 import {
   AuthError, Forbidden, Loading, MfaEnroll, MfaVerify, NotConfigured, SetNewPassword, SignIn, UnsafeKey,
 } from './pages/auth/AuthScreens.jsx';
 
 function Page({ route }) {
+  if (route === '/inquiries' || route.startsWith('/inquiries/')) return <InquiriesPage route={route} />;
   if (route.startsWith('/expenses')) return <ExpensesPage route={route} />;
   if (route.startsWith('/price-sheet')) return <PriceSheetPage route={route} />;
   if (route === '/jobs' || route.startsWith('/jobs/')) return <JobsPage route={route} />;

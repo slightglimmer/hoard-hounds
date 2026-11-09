@@ -26,6 +26,76 @@ function upsert(list, row, defaults) {
 const withNextDue = (r) => ({ ...r, next_due_date: recurrenceDate(r.start_date, r.frequency, r.occurrences_posted) });
 
 export const demoApi = {
+  async features() {
+    return { inquiries: true };
+  },
+
+  // ---- Inquiries ----
+  async listInquiries() {
+    await wait();
+    return copy([...store.inquiries].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)));
+  },
+  async countNewInquiries() {
+    return store.inquiries.filter((i) => i.status === 'new').length;
+  },
+  async getInquiry(id) {
+    await wait();
+    const inquiry = store.inquiries.find((i) => i.id === id);
+    if (!inquiry) throw new Error('That request no longer exists.');
+    return copy({
+      inquiry,
+      photos: store.inquiryPhotos.filter((p) => p.inquiry_id === id),
+      estimates: store.estimates.filter((e) => e.inquiry_id === id).map(({ id: eid, number, status, total }) => ({ id: eid, number, status, total })),
+    });
+  },
+  async saveInquiry(row) {
+    await wait();
+    const found = store.inquiries.find((i) => i.id === row.id);
+    if (!found) throw new Error('That request no longer exists.');
+    for (const k of ['status', 'admin_notes', 'customer_id', 'job_id']) if (k in row) found[k] = row[k] === '' ? null : row[k];
+    return copy(found);
+  },
+  async deleteInquiry(id) {
+    await wait();
+    store.inquiries = store.inquiries.filter((i) => i.id !== id);
+    store.inquiryPhotos = store.inquiryPhotos.filter((p) => p.inquiry_id !== id);
+    for (const e of store.estimates) if (e.inquiry_id === id) e.inquiry_id = null;
+  },
+
+  // ---- Internal costing ----
+  async getEstimateCosting(estimateId) {
+    await wait();
+    return copy(store.costing.find((c) => c.estimate_id === estimateId) ?? null);
+  },
+  async saveEstimateCosting(row) {
+    await wait();
+    const i = store.costing.findIndex((c) => c.estimate_id === row.estimate_id);
+    const saved = { ...(i >= 0 ? store.costing[i] : { is_demo: true }), ...row };
+    if (i >= 0) store.costing[i] = saved;
+    else store.costing.push(saved);
+    return copy(saved);
+  },
+
+  // ---- Dumpsters ----
+  async listDumpsters(jobId) {
+    await wait();
+    return copy(store.dumpsters.filter((d) => d.job_id === jobId).sort((a, b) => ((a.delivery_date || '9') < (b.delivery_date || '9') ? -1 : 1)));
+  },
+  async listDumpsterProviders() {
+    const seen = new Map();
+    for (const d of store.dumpsters) if (d.provider_name && !seen.has(d.provider_name)) seen.set(d.provider_name, d.provider_contact);
+    return [...seen].map(([name, contact]) => ({ name, contact }));
+  },
+  async saveDumpster(row) {
+    await wait();
+    if (row.delivery_date && row.expected_pickup_date && row.expected_pickup_date < row.delivery_date) throw new Error('One of the values isn’t allowed. Please check the form.');
+    return copy(upsert(store.dumpsters, row, {}));
+  },
+  async deleteDumpster(id) {
+    await wait();
+    store.dumpsters = store.dumpsters.filter((d) => d.id !== id);
+  },
+
   async listCategories() {
     await wait();
     return copy([...store.categories].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name)));
@@ -52,6 +122,10 @@ export const demoApi = {
   async deleteExpense(id) {
     await wait();
     store.expenses = store.expenses.filter((e) => e.id !== id);
+    for (const d of store.dumpsters) {
+      if (d.base_expense_id === id) d.base_expense_id = null;
+      if (d.overage_expense_id === id) d.overage_expense_id = null;
+    }
   },
 
   async listRecurring() {
@@ -131,7 +205,11 @@ export const demoApi = {
     await wait();
     const isNew = !row.id;
     const saved = upsert(store.estimates, row, isNew
-      ? { number: Math.max(1000, ...store.estimates.map((e) => e.number)) + 1, customer_id: null, job_id: null, share_token: null, accepted_at: null, accepted_via: null }
+      ? {
+          number: Math.max(1000, ...store.estimates.map((e) => e.number)) + 1, customer_id: null, job_id: null, share_token: null, accepted_at: null,
+          accepted_via: null, inquiry_id: null, scope_of_work: null, dumpster_count: null, dumpster_size_yards: null, dumpster_weight_allowance_tons: null,
+          dumpster_rental_days: null, overage_rate_per_ton: null, extra_day_rate: null, overage_terms: null,
+        }
       : {});
     // Same as the database trigger: totals are always recalculated.
     const t = computeTotals(saved.line_items, saved.discount_type, saved.discount_value);
@@ -141,6 +219,7 @@ export const demoApi = {
   async deleteEstimate(id) {
     await wait();
     store.estimates = store.estimates.filter((e) => e.id !== id);
+    store.costing = store.costing.filter((c) => c.estimate_id !== id);
   },
 
   async listCustomers() {
@@ -155,6 +234,7 @@ export const demoApi = {
     await wait();
     store.customers = store.customers.filter((c) => c.id !== id);
     for (const j of store.jobs) if (j.customer_id === id) j.customer_id = null;
+    for (const i of store.inquiries) if (i.customer_id === id) i.customer_id = null;
   },
 
   async listJobsWithMoney() {
@@ -191,6 +271,8 @@ export const demoApi = {
     // Same as the database: payments and money details go with the job;
     // linked expenses, hours and estimates are kept, just unlinked.
     store.jobs = store.jobs.filter((j) => j.id !== id);
+    store.dumpsters = store.dumpsters.filter((d) => d.job_id !== id);
+    for (const i of store.inquiries) if (i.job_id === id) i.job_id = null;
     store.financials = store.financials.filter((f) => f.job_id !== id);
     store.payments = store.payments.filter((p) => p.job_id !== id);
     store.assignments = store.assignments.filter((a) => a.job_id !== id);
@@ -294,8 +376,8 @@ export const demoApi = {
   },
   async saveQuoteSettings(row) {
     await wait();
-    const { quote_message, default_terms, default_valid_days, default_deposit } = row;
-    Object.assign(store.settings, { quote_message, default_terms, default_valid_days, default_deposit });
+    const keys = ['quote_message', 'default_terms', 'default_valid_days', 'default_deposit', 'default_overage_terms', 'default_labor_rate', 'default_contingency_pct', 'default_target_margin_pct'];
+    for (const k of keys) if (k in row) store.settings[k] = row[k];
     return copy(store.settings);
   },
   // Demo only: pretends the customer opened the quote link and accepted it,

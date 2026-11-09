@@ -11,7 +11,7 @@ OUT=${1:-${TMPDIR:-/tmp}/hh-test-output}; mkdir -p "$OUT/shots"
 cd "$ROOT"
 env -u VITE_SUPABASE_URL -u VITE_SUPABASE_PUBLISHABLE_KEY npx vite --port 5180 --strictPort >"$OUT/server-5180.log" 2>&1 &
 P1=$!
-VITE_SUPABASE_URL=https://testproj.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_testkey123 npx vite --port 5181 --strictPort >"$OUT/server-5181.log" 2>&1 &
+VITE_FORM_PROVIDER=supabase VITE_FORM_ENDPOINT=https://formspree.test/f/backup VITE_SUPABASE_URL=https://testproj.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_testkey123 npx vite --port 5181 --strictPort >"$OUT/server-5181.log" 2>&1 &
 P2=$!
 VITE_SUPABASE_URL=https://testproj.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=sb_secret_not_allowed npx vite --port 5182 --strictPort >"$OUT/server-5182.log" 2>&1 &
 P3=$!

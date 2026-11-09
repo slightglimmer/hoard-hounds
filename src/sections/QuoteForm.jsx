@@ -47,7 +47,7 @@ function validate(v) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email.trim())) errors.email = 'Please enter a valid email address.';
   if (v.phone.replace(/\D/g, '').length < 10) errors.phone = 'Please enter a phone number with area code.';
   if (v.address.trim().length < 5) errors.address = 'Please enter the property address.';
-  if (!v.cleanoutType) errors.cleanoutType = 'Please choose the type of cleanout.';
+  if (!v.cleanoutType) errors.cleanoutType = 'Please choose the type of clean-out.';
   if (v.description.trim().length < 10) errors.description = 'Please tell us a little about the project.';
   if (!v.consent) errors.consent = 'Please agree to be contacted so we can send your estimate.';
   return errors;
@@ -332,7 +332,7 @@ export default function QuoteForm() {
                       className="field" value={values.phone} onChange={update} aria-invalid={!!errors.phone}
                       aria-describedby={describedBy('phone')} required />
                   </Field>
-                  <Field id={id('cleanoutType')} label="Type of Cleanout" error={errors.cleanoutType}>
+                  <Field id={id('cleanoutType')} label="Type of Clean-Out" error={errors.cleanoutType}>
                     <select id={id('cleanoutType')} name="cleanoutType" className={`field ${SELECT_ARROW}`}
                       value={values.cleanoutType} onChange={update} aria-invalid={!!errors.cleanoutType}
                       aria-describedby={describedBy('cleanoutType')} required>

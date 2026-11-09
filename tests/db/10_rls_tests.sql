@@ -125,5 +125,5 @@ rollback;
 begin; select pg_temp.as_user('00000000-0000-0000-0000-00000000000a','aal2'); set local role authenticated;
 insert into public.expenses (expense_date, description, category_id, amount) select current_date, 'Real expense', id, 9 from public.expense_categories where name = 'Fuel';
 select 'cleared ' || public.clear_demo_data() || ' demo rows';
-select case when (select count(*) from public.expenses) = 1 and (select count(*) from public.employees) = 0 and (select count(*) from public.jobs) = 0 and (select count(*) from public.expense_categories) = 16 then 'PASS demo cleared, real rows and categories kept' else 'FAIL clear demo' end;
+select case when (select count(*) from public.expenses) = 1 and (select count(*) from public.employees) = 0 and (select count(*) from public.jobs) = 0 and (select count(*) from public.expense_categories) = 19 then 'PASS demo cleared, real rows and categories kept' else 'FAIL clear demo' end;
 rollback;

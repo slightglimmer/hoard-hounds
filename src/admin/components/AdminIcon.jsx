@@ -93,6 +93,40 @@ const PATHS = {
     </>
   ),
   pause: <path d="M9 5v14M15 5v14" />,
+  inbox: (
+    <>
+      <path d="M3 13h5l1.5 3h5L16 13h5" />
+      <path d="M5.5 5h13L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Z" />
+    </>
+  ),
+  phone: <path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" />,
+  mail: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3.5 7 8.5 6 8.5-6" />
+    </>
+  ),
+  pin: (
+    <>
+      <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="10" r="2" />
+      <path d="m21 16-5-5-8 9" />
+    </>
+  ),
+  dumpster: (
+    <>
+      <path d="M3 9h18l-2 9H5L3 9Z" />
+      <path d="M2 9l2-4h16l2 4" />
+      <circle cx="7.5" cy="20" r="1.2" />
+      <circle cx="16.5" cy="20" r="1.2" />
+    </>
+  ),
 };
 
 export default function AdminIcon({ name, className = 'h-5 w-5', strokeWidth = 1.8 }) {
