@@ -11,7 +11,7 @@
 > until they're in place and verified.
 
 **Hoard Hounds LLC** ("Hoard Hounds," "we," "us"), Redford, Michigan · (734) 589-7627 ·
-**[hoardhounds@gmail.com, once confirmed active]**
+hoardhounds@gmail.com
 
 This agreement applies to clean-out services described in your written quote ("Quote"). By
 accepting a Quote (in writing, by email or text, or online through your quote link) you agree to

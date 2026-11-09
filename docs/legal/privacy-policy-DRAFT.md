@@ -81,8 +81,7 @@ information.
 ## Your choices
 
 You can ask to see, correct or delete the information you've sent us, or ask us to stop contacting
-you, by emailing **[hoardhounds@gmail.com, once confirmed active; until then
-johnice.edward@gmail.com]** or calling (734) 589-7627.
+you, by emailing hoardhounds@gmail.com or calling (734) 589-7627.
 
 ## Children
 

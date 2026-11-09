@@ -13,7 +13,7 @@ Search the project for `PLACEHOLDER` to find each one.
 
 | What | Where |
 |---|---|
-| Phone number and email (set to (734) 589-7627 and johnice.edward@gmail.com) | `src/config/site.js` |
+| Phone number and email (set to (734) 589-7627 and hoardhounds@gmail.com) | `src/config/site.js` |
 | Business hours (hidden until you add them) | `src/config/site.js` → `hours` |
 | Illustrations standing in for photos | `public/images/` (see section 5) |
 | Privacy policy text | `src/PrivacyPage.jsx`. Have someone review it before launch |

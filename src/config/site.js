@@ -13,7 +13,7 @@ export const SITE = {
 
   phoneDisplay: '(734) 589-7627',
   phoneHref: 'tel:+17345897627',
-  email: 'johnice.edward@gmail.com',
+  email: 'hoardhounds@gmail.com',
   // Optional, e.g. 'Mon–Sat, 8am–6pm'. Leave empty to hide hours on the site.
   hours: '',
 
